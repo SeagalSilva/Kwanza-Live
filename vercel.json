@@ -1,5 +1,12 @@
 {
+  "outputDirectory": ".",
   "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    }
+  ],
   "headers": [
     {
       "source": "/js/(.*)",

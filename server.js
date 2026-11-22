@@ -166,6 +166,10 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Kwanza Live dev server running at http://0.0.0.0:${PORT}`);
-});
+if (process.env.VERCEL !== '1') {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Kwanza Live dev server running at http://0.0.0.0:${PORT}`);
+  });
+}
+
+export default app;

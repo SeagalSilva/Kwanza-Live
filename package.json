@@ -8,7 +8,7 @@
     "dev": "node server.js",
     "start": "node server.js",
     "build": "node -e \"console.log('Build successful')\"",
-    "lint": "node --check js/main.js js/game.js js/firebase.js js/config.js js/systems/chat.js js/systems/workstation.js js/ui/chat.js js/ui/modals/workstation.js"
+    "lint": "node --check js/main.js js/game.js js/firebase.js js/config.js js/systems/chat.js js/systems/workstation.js js/ui/chat.js js/ui/modals/workstation.js api/index.js"
   },
   "dependencies": {
     "express": "^4.19.2"
