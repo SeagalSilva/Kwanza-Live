@@ -1,0 +1,85 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "usernames": {
+      "$name": {
+        ".read": "auth != null",
+        ".write": "auth != null && !data.exists() && newData.val() === auth.uid",
+        ".validate": "$name.matches(/^[a-z0-9_]{3,16}$/)"
+      }
+    },
+
+    "users": {
+      "$uid": {
+        "profile": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid === $uid && !data.exists()",
+          ".validate": "newData.hasChildren(['username', 'look']) && newData.child('username').isString() && newData.child('username').val().matches(/^[A-Za-z0-9_]{3,16}$/)"
+        },
+        "save": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid",
+          "wallet": {
+            "$currency": { ".validate": "newData.isNumber() && newData.val() >= 0" }
+          },
+          "inv": {
+            "$item": { ".validate": "newData.isNumber() && newData.val() >= 0" }
+          }
+        },
+        "inbox": {
+          ".read": "auth != null && auth.uid === $uid",
+          "$id": {
+            ".write": "auth != null && ((!data.exists() && newData.exists()) || auth.uid === $uid)",
+            ".validate": "!newData.exists() || (newData.hasChildren(['currency', 'amount', 'listingId']) && (newData.child('currency').val() === 'bronze' || newData.child('currency').val() === 'silver' || newData.child('currency').val() === 'gold') && newData.child('amount').isNumber() && newData.child('amount').val() > 0 && newRoot.child('market').child('listings').child(newData.child('listingId').val()).child('soldTo').val() === auth.uid && newRoot.child('market').child('listings').child(newData.child('listingId').val()).child('price').val() === newData.child('amount').val())"
+          }
+        }
+      }
+    },
+
+    "world": {
+      "players": {
+        ".read": "auth != null",
+        "$uid": { ".write": "auth != null && auth.uid === $uid" }
+      },
+
+      "publicFarm": {
+        ".read": "auth != null",
+        "$tile": {
+          ".write": "auth != null && ((!data.exists() && newData.child('by').val() === auth.uid) || (data.exists() && !newData.exists() && (data.child('by').val() === auth.uid || now > data.child('at').val() + data.child('ttl').val())))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['crop', 'by', 'byName', 'at', 'ttl']) && newData.child('at').val() === now && newData.child('ttl').isNumber() && newData.child('ttl').val() <= 7200000)"
+        }
+      },
+
+      "lands": {
+        ".read": "auth != null",
+        "$landId": {
+          ".write": "auth != null && !data.exists() && newData.child('owner').val() === auth.uid",
+          ".validate": "newData.hasChildren(['owner', 'ownerName', 'at'])"
+        }
+      },
+
+      "landTiles": {
+        ".read": "auth != null",
+        "$landId": {
+          "$tile": {
+            ".write": "auth != null && root.child('world').child('lands').child($landId).child('owner').val() === auth.uid",
+            ".validate": "!newData.exists() || (newData.hasChildren(['crop', 'by', 'at', 'ttl']) && newData.child('at').val() === now && newData.child('ttl').isNumber())"
+          }
+        }
+      }
+    },
+
+    "market": {
+      "listings": {
+        ".read": "auth != null",
+        ".indexOn": ["createdAt"],
+        "$id": {
+          ".write": "auth != null && ((!data.exists() && newData.child('seller').val() === auth.uid) || (data.exists() && data.child('seller').val() === auth.uid) || (data.exists() && !data.child('soldTo').exists() && newData.child('soldTo').val() === auth.uid && newData.child('seller').val() === data.child('seller').val() && newData.child('item').val() === data.child('item').val() && newData.child('qty').val() === data.child('qty').val() && newData.child('price').val() === data.child('price').val() && newData.child('currency').val() === data.child('currency').val()))",
+          ".validate": "!newData.exists() || (newData.hasChildren(['seller', 'sellerName', 'item', 'qty', 'price', 'currency', 'createdAt']) && newData.child('qty').isNumber() && newData.child('qty').val() >= 1 && newData.child('price').isNumber() && newData.child('price').val() >= 1 && newData.child('price').val() <= 1000000 && (newData.child('currency').val() === 'bronze' || newData.child('currency').val() === 'silver' || newData.child('currency').val() === 'gold') && (!newData.child('soldTo').exists() || newData.child('soldTo').isString()))"
+        }
+      }
+    }
+  }
+}

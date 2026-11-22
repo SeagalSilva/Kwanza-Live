@@ -1,493 +1,113 @@
 <!doctype html>
-<html lang="pt-AO">
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kwanza Live</title>
-<style>
-:root{--red:#cc092f;--gold:#f5c518;--bg:#0f0f12;--card:#1a1a20;--line:#2b2b35;--txt:#f2f2f5;--mut:#9a9aa8;--ok:#2ecc71;--bad:#e74c3c}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;display:flex;justify-content:center}
-#app{width:100%;max-width:520px;min-height:100vh;display:flex;flex-direction:column}
-header{background:linear-gradient(90deg,var(--red) 0 50%,#000 50%);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--gold)}
-header h1{font-size:20px;letter-spacing:.5px}
-header h1 span{color:var(--gold)}
-header button{background:rgba(0,0,0,.4);color:#fff;border:1px solid var(--gold);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer}
-.screen{display:none;flex:1;padding:16px;flex-direction:column;gap:14px}
-.screen.on{display:flex}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
-h2{font-size:17px;margin-bottom:8px}
-.btn{background:var(--red);color:#fff;border:0;border-radius:10px;padding:12px 14px;font-size:15px;font-weight:600;cursor:pointer;width:100%}
-.btn:active{transform:scale(.98)}
-.btn.alt{background:var(--card);border:1px solid var(--line)}
-.btn.gold{background:var(--gold);color:#000}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-input,select{width:100%;padding:11px;border-radius:10px;border:1px solid var(--line);background:#101015;color:var(--txt);font-size:15px;margin-bottom:10px}
-label{font-size:13px;color:var(--mut);display:block;margin-bottom:4px}
-.hero{text-align:center;padding:40px 10px}
-.hero .logo{font-size:44px;font-weight:800}
-.hero .logo span{color:var(--gold)}
-.hero p{color:var(--mut);margin:10px 0 24px}
-.top{display:flex;justify-content:space-between;align-items:center}
-.top .who b{font-size:17px}
-.top .who small{color:var(--mut);display:block}
-.money{color:var(--gold);font-weight:700;font-size:17px}
-.bars{display:grid;gap:8px}
-.bar{display:grid;grid-template-columns:90px 1fr 34px;align-items:center;gap:8px;font-size:13px}
-.bar i{display:block;height:9px;border-radius:6px;background:#2a2a33;overflow:hidden}
-.bar i b{display:block;height:100%;border-radius:6px}
-#log{max-height:240px;overflow:auto;display:flex;flex-direction:column;gap:6px;font-size:14px}
-#log div{padding:7px 9px;border-left:3px solid var(--line);background:#14141a;border-radius:6px}
-#log .age{border-left-color:var(--gold);font-weight:700;color:var(--gold)}
-#log .good{border-left-color:var(--ok)}
-#log .bad{border-left-color:var(--bad)}
-.nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.nav button{background:var(--card);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 4px;font-size:13px;cursor:pointer}
-.age-btn{font-size:17px;padding:15px;background:linear-gradient(90deg,var(--red),#8d0620)}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:flex-end;justify-content:center;z-index:10}
-.modal.on{display:flex}
-.sheet{background:var(--card);width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:16px;max-height:80vh;overflow:auto;display:flex;flex-direction:column;gap:8px;border-top:3px solid var(--gold)}
-.item{display:flex;justify-content:space-between;gap:10px;align-items:center}
-.item small{color:var(--mut);display:block}
-.item button{width:auto;min-width:80px;padding:8px 10px;font-size:13px}
-.rank{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
-.rank img{width:28px;height:28px;border-radius:50%}
-.rank .n{width:20px;color:var(--gold);font-weight:700}
-.rank .s{margin-left:auto;color:var(--gold)}
-.muted{color:var(--mut);font-size:13px}
-.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#000;border:1px solid var(--gold);padding:9px 14px;border-radius:10px;font-size:14px;display:none;z-index:20}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0e1712">
+  <title>Kwanza Live</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌽%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/screens.css">
+  <link rel="stylesheet" href="css/hud.css">
+  <link rel="stylesheet" href="css/modal.css">
 </head>
-<body>
-<div id="app">
-<header><h1>Kwanza <span>Live</span></h1><button id="btnOut" style="display:none">Sair</button></header>
+<body data-screen="loading">
 
-<!-- LOGIN -->
-<section id="s-login" class="screen on">
-  <div class="hero">
-    <div class="logo">Kwanza <span>Live</span></div>
-    <p>Simulador de vida angolano. Nasce, estuda, trabalha, empreende e constrói o teu legado.</p>
-    <button class="btn gold" id="btnLogin">Entrar com Google</button>
-    <p class="muted" id="loginMsg" style="margin-top:14px"></p>
+  <!-- Language + sign-out (always on top) -->
+  <div class="topbar">
+    <button id="langBtn" class="round" type="button" data-i18n-title="lang.switch">PT</button>
+    <button id="logoutBtn" class="round" type="button" data-i18n-title="hud.logout" hidden>⎋</button>
   </div>
-  <div class="card"><h2>Top 10 Lendas</h2><div id="rankLogin" class="muted">A carregar...</div></div>
-</section>
 
-<!-- CRIAR PERSONAGEM -->
-<section id="s-create" class="screen">
-  <div class="card">
-    <h2>Nova vida</h2>
-    <label>Nome</label><input id="cName" maxlength="24" placeholder="Ex.: Mateus Kialunda">
-    <label>Género</label>
-    <select id="cGender"><option value="M">Masculino</option><option value="F">Feminino</option></select>
-    <label>Província de nascimento</label>
-    <select id="cProv"></select>
-    <label>Família</label>
-    <select id="cFam">
-      <option value="0">Humilde</option>
-      <option value="1" selected>Classe média</option>
-      <option value="2">Abastada</option>
-    </select>
-    <button class="btn" id="btnStart">Nascer</button>
-  </div>
-</section>
+  <!-- Loading -->
+  <main id="screen-loading" class="screen active">
+    <div class="loader"></div>
+    <p data-i18n="loading">Loading…</p>
+  </main>
 
-<!-- JOGO -->
-<section id="s-game" class="screen">
-  <div class="card">
-    <div class="top">
-      <div class="who"><b id="gName"></b><small id="gInfo"></small></div>
-      <div class="money" id="gMoney"></div>
+  <!-- Login -->
+  <main id="screen-login" class="screen">
+    <div class="panel hero">
+      <div class="logo">Kwanza <span>Live</span></div>
+      <p class="tag" data-i18n="login.tag"></p>
+      <button id="btn-google" class="btn gold big" type="button">
+        <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+        <span data-i18n="login.google"></span>
+      </button>
+      <p id="login-msg" class="status bad" role="alert"></p>
+      <ul class="how">
+        <li data-i18n="login.how1"></li>
+        <li data-i18n="login.how2"></li>
+        <li data-i18n="login.how3"></li>
+      </ul>
     </div>
-    <div class="bars" style="margin-top:12px">
-      <div class="bar">Saúde<i><b id="b-health" style="background:#2ecc71"></b></i><span id="v-health"></span></div>
-      <div class="bar">Felicidade<i><b id="b-happy" style="background:#f5c518"></b></i><span id="v-happy"></span></div>
-      <div class="bar">Inteligência<i><b id="b-smarts" style="background:#3498db"></b></i><span id="v-smarts"></span></div>
-      <div class="bar">Aparência<i><b id="b-looks" style="background:#e91e8c"></b></i><span id="v-looks"></span></div>
+  </main>
+
+  <!-- Username + character creation -->
+  <main id="screen-onboard" class="screen">
+    <div class="panel">
+      <section id="ob-step1">
+        <h1 data-i18n="ob.step1.title"></h1>
+        <label for="ob-username" data-i18n="ob.username.label"></label>
+        <input id="ob-username" type="text" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <p class="hint" data-i18n="ob.username.hint"></p>
+        <p id="ob-status" class="status" role="status"></p>
+        <button id="ob-next" class="btn gold big" type="button" disabled data-i18n="ob.next"></button>
+      </section>
+
+      <section id="ob-step2" hidden>
+        <h1 data-i18n="ob.step2.title"></h1>
+        <canvas id="ob-preview" width="260" height="260"></canvas>
+        <p class="hint center" data-i18n="ob.tapTurn"></p>
+        <label data-i18n="ob.skin"></label><div id="ob-skin" class="swatches"></div>
+        <label data-i18n="ob.hairStyle"></label><div id="ob-styles" class="chips"></div>
+        <label data-i18n="ob.hair"></label><div id="ob-hair" class="swatches"></div>
+        <label data-i18n="ob.shirt"></label><div id="ob-shirt" class="swatches"></div>
+        <p id="ob-error" class="status bad" role="alert"></p>
+        <div class="row-btns">
+          <button id="ob-back" class="btn alt" type="button" data-i18n="ob.back"></button>
+          <button id="ob-create" class="btn gold big" type="button" data-i18n="ob.create"></button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Game -->
+  <div id="screen-game" class="screen">
+    <canvas id="world"></canvas>
+
+    <div class="hud">
+      <div class="hud-me">
+        <canvas id="hud-portrait" width="112" height="112"></canvas>
+        <div class="hud-me-info">
+          <strong id="hud-name"></strong>
+          <div class="wallet" id="hud-wallet"></div>
+        </div>
+      </div>
+
+      <div class="hud-side">
+        <button id="btn-inv" class="round" type="button" data-i18n-title="hud.inventory">🎒</button>
+        <button id="btn-wallet" class="round" type="button" data-i18n-title="hud.wallet">👛</button>
+      </div>
+
+      <div class="hotbar" id="hotbar"></div>
+
+      <div class="dpad" id="dpad" hidden>
+        <button data-dir="up" type="button">▲</button>
+        <button data-dir="left" type="button">◀</button>
+        <button data-dir="right" type="button">▶</button>
+        <button data-dir="down" type="button">▼</button>
+      </div>
+
+      <button id="btn-interact" class="interact" type="button" hidden></button>
+      <p class="control-hint" id="hud-hint" data-i18n="hint.controls"></p>
     </div>
   </div>
-  <div class="card"><div id="log"></div></div>
-  <div class="nav">
-    <button data-m="work">💼 Emprego</button>
-    <button data-m="edu">🎓 Educação</button>
-    <button data-m="act">⚡ Atividades</button>
-    <button data-m="biz">🏪 Negócios</button>
-    <button data-m="shop">🛒 Loja</button>
-    <button data-m="love">❤️ Relações</button>
-  </div>
-  <button class="btn age-btn" id="btnAge">➕ Envelhecer 1 ano</button>
-  <button class="btn alt" id="btnRank">🏆 Ranking</button>
-</section>
 
-<!-- FIM -->
-<section id="s-end" class="screen">
-  <div class="card" style="text-align:center">
-    <h2 id="eTitle"></h2>
-    <p id="eText" class="muted" style="margin:8px 0"></p>
-    <div class="money" id="eScore" style="font-size:26px"></div>
-    <p class="muted">Pontuação final</p>
-  </div>
-  <div class="card"><h2>Top 10 Lendas</h2><div id="rankEnd"></div></div>
-  <button class="btn" id="btnNew">Nova vida</button>
-</section>
-</div>
+  <div id="modal-root"></div>
+  <div id="toast-root" aria-live="polite"></div>
 
-<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
-<div class="toast" id="toast"></div>
-
-<script>
-function boot(){
-const firebaseConfig = {
-  apiKey: "AIzaSyBcjcNzMLCv-jSCpy9N29GmEESVqRn_xRU",
-  authDomain: "kwanzaclick.firebaseapp.com",
-  databaseURL: "https://kwanzaclick-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "kwanzaclick",
-  storageBucket: "kwanzaclick.appspot.com",
-  messagingSenderId: "140060118241",
-  appId: "1:140060118241:web:3fdf84bb8654844a74bba0",
-  measurementId: "G-QC255LPQWN"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.database();
-
-const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const rnd = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
-const pick = a => a[Math.floor(Math.random()*a.length)];
-const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
-const kz = n => Math.round(n).toLocaleString('pt-AO') + ' Kz';
-const PROVS = ['Luanda','Benguela','Huíla','Huambo','Bié','Cabinda','Cuando','Cubango','Cunene','Cuanza Norte','Cuanza Sul','Icolo e Bengo','Lunda Norte','Lunda Sul','Malanje','Moxico','Moxico Leste','Namibe','Uíge','Zaire','Bengo'];
-PROVS.sort(); $('cProv').innerHTML = PROVS.map(p=>`<option>${p}</option>`).join('');
-
-let user = null, G = null;
-
-/* ---------- Telas ---------- */
-function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on')); $(id).classList.add('on'); }
-function toast(t){ const el=$('toast'); el.textContent=t; el.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(()=>el.style.display='none',2200); }
-function openModal(html){ $('sheet').innerHTML = html; $('modal').classList.add('on'); }
-function closeModal(){ $('modal').classList.remove('on'); }
-$('modal').addEventListener('click', e=>{ if(e.target.id==='modal') closeModal(); });
-
-/* ---------- Autenticação ---------- */
-const provider = new firebase.auth.GoogleAuthProvider();
-$('btnLogin').onclick = async () => {
-  $('loginMsg').textContent = '';
-  try { await auth.signInWithPopup(provider); }
-  catch(e){
-    if (e.code==='auth/popup-blocked' || e.code==='auth/operation-not-supported-in-this-environment') { auth.signInWithRedirect(provider); return; }
-    if (e.code==='auth/unauthorized-domain') $('loginMsg').textContent = 'Domínio não autorizado. Adiciona este domínio em Firebase > Authentication > Settings > Authorized domains.';
-    else if (e.code!=='auth/popup-closed-by-user') $('loginMsg').textContent = 'Erro no login: ' + e.message;
-  }
-};
-$('btnOut').onclick = () => auth.signOut();
-auth.onAuthStateChanged(async u => {
-  user = u;
-  $('btnOut').style.display = u ? 'block' : 'none';
-  if (!u) { G=null; show('s-login'); loadRank('rankLogin'); return; }
-  try {
-    const snap = await db.ref('kwanzalive/users/'+u.uid).get();
-    if (snap.exists() && snap.val().alive) { G = snap.val(); G.log = G.log||[]; G.assets = G.assets||[]; render(); show('s-game'); }
-    else { $('cName').value = (u.displayName||'').slice(0,24); show('s-create'); }
-  } catch(e){ toast('Erro ao carregar: '+e.message); $('cName').value=(u.displayName||'').slice(0,24); show('s-create'); }
-});
-
-/* ---------- Persistência ---------- */
-function save(){ if(!user||!G) return; db.ref('kwanzalive/users/'+user.uid).set(G).catch(e=>toast('Erro ao guardar: '+e.message)); }
-function score(){ return Math.round(G.money + G.assets.reduce((s,a)=>s+a.value,0) + G.age*10000 + G.happy*5000 + G.smarts*3000); }
-function loadRank(id){
-  db.ref('kwanzalive/ranking').orderByChild('score').limitToLast(10).get().then(s=>{
-    const arr=[]; s.forEach(c=>arr.push(c.val())); arr.reverse();
-    $(id).innerHTML = arr.length ? arr.map((r,i)=>`<div class="rank"><span class="n">${i+1}</span>${r.photo?`<img src="${esc(r.photo)}" alt="">`:''}<span>${esc(r.name)} <small class="muted">(${r.age} anos)</small></span><span class="s">${Math.round(r.score).toLocaleString('pt-AO')}</span></div>`).join('') : '<span class="muted">Ainda sem lendas. Sê o primeiro!</span>';
-  }).catch(()=>{ $(id).textContent='Ranking indisponível (verifica as regras do Realtime Database).'; });
-}
-function pushRank(){
-  if(!user) return;
-  const s = score();
-  db.ref('kwanzalive/ranking/'+user.uid).get().then(snap=>{
-    if(!snap.exists() || snap.val().score < s)
-      db.ref('kwanzalive/ranking/'+user.uid).set({name:G.name,photo:user.photoURL||'',score:s,age:G.age,updated:Date.now()});
-  }).catch(()=>{});
-}
-
-/* ---------- Nova vida ---------- */
-$('btnStart').onclick = () => {
-  const name = $('cName').value.trim();
-  if (!name) return toast('Escreve um nome');
-  const fam = +$('cFam').value;
-  G = { name, gender:$('cGender').value, prov:$('cProv').value, age:0, health:rnd(60,100), happy:rnd(60,100), smarts:rnd(30,90), looks:rnd(30,90),
-        money:[0,0,0][fam], family:fam, edu:0, studying:0, job:null, jobYears:0, assets:[], partner:null, kids:0, biz:null, alive:true, log:[], flags:{} };
-  const fm = ['uma família humilde','uma família de classe média','uma família abastada'][fam];
-  addLog(`Nasceste em ${G.prov}, no seio de ${fm}.`, 'age', 'Ano 0');
-  save(); render(); show('s-game');
-};
-$('btnNew').onclick = () => { show('s-create'); };
-
-/* ---------- Log e render ---------- */
-function addLog(txt, cls='', ageLabel){
-  if (ageLabel) G.log.push({t:ageLabel, c:'age'});
-  G.log.push({t:txt, c:cls});
-  if (G.log.length>80) G.log = G.log.slice(-80);
-}
-function render(){
-  $('gName').textContent = G.name;
-  $('gInfo').textContent = `${G.age} anos • ${G.prov} • ${jobLabel()}`;
-  $('gMoney').textContent = kz(G.money);
-  ['health','happy','smarts','looks'].forEach(k=>{ $('b-'+k).style.width=G[k]+'%'; $('v-'+k).textContent=G[k]; });
-  $('log').innerHTML = G.log.map(l=>`<div class="${l.c}">${esc(l.t)}</div>`).join('');
-  $('log').scrollTop = $('log').scrollHeight;
-}
-function jobLabel(){
-  if (G.studying>0) return G.age<18 ? 'Estudante' : 'Universitário';
-  if (G.job) return G.job.name;
-  if (G.age<6) return 'Criança';
-  if (G.age<18) return 'Estudante';
-  return 'Desempregado';
-}
-function fx(o, msg, cls){
-  for (const k of ['health','happy','smarts','looks']) if (o[k]) G[k]=clamp(G[k]+o[k]);
-  if (o.money) G.money += o.money;
-  if (msg) addLog(msg, cls|| ((o.health<0||o.happy<0||o.money<0)?'bad':'good'));
-}
-
-/* ---------- Envelhecer ---------- */
-const EVENTS = [
-  {a:[0,5],t:'Apanhaste uma gripe forte. Os teus pais cuidaram de ti.',e:{health:-8,happy:-3}},
-  {a:[0,5],t:'Aprendeste a dizer as tuas primeiras palavras. A família festejou!',e:{happy:6,smarts:3}},
-  {a:[6,17],t:'Tiveste uma excelente nota no teste de Matemática.',e:{smarts:5,happy:4}},
-  {a:[6,17],t:'Ganhaste um jogo de bola de rua no bairro.',e:{happy:6,health:2}},
-  {a:[6,17],t:'Fizeste uma amizade para a vida na escola.',e:{happy:8}},
-  {a:[6,17],t:'Foste apanhado a copiar num teste.',e:{smarts:-3,happy:-5}},
-  {a:[12,60],t:'Foste a um casamento tradicional e dançaste kizomba toda a noite.',e:{happy:7,health:1}},
-  {a:[10,80],t:'Mataste a saudade comendo muamba de galinha com funge.',e:{happy:5}},
-  {a:[10,80],t:'Uma chuvada inundou a rua e perdeste algumas coisas.',e:{money:-15000,happy:-4}},
-  {a:[16,70],t:'Um amigo pediu-te um empréstimo. Ajudaste.',e:{money:-10000,happy:3}},
-  {a:[16,70],t:'Recebeste uma promoção inesperada no kilapi.',e:{money:25000,happy:6}},
-  {a:[18,70],t:'Foste assaltado numa paragem de candongueiro.',e:{money:-20000,happy:-8}},
-  {a:[18,70],t:'Ganhaste um pequeno prémio num sorteio.',e:{money:40000,happy:8}},
-  {a:[20,90],t:'Sentiste dores nas costas por trabalhar demais.',e:{health:-6}},
-  {a:[30,90],t:'Fizeste análises e o médico recomendou cuidar da alimentação.',e:{health:-3,smarts:1}},
-  {a:[40,90],t:'Os joelhos já se queixam dos anos.',e:{health:-7,looks:-3}},
-  {a:[50,100],t:'Os netos visitaram-te e a casa encheu-se de alegria.',e:{happy:10}},
-  {a:[60,110],t:'Apanhaste malária e foi difícil recuperar.',e:{health:-15,happy:-4}}
-];
-function ageUp(){
-  G.age++;
-  const y = G.age;
-  addLog('', '', `Ano ${y} — ${y} anos`);
-  // Idade natural
-  fx({health:y>45?-rnd(1,3):0, looks:y>35?-1:0});
-  if (y>=65) fx({health:-rnd(1,4)});
-  // Escola obrigatória
-  if (y===6){ G.studying=12; addLog('Entraste para a escola primária.'); }
-  if (y===12){ G.edu=1; addLog('Concluíste o ensino primário.','good'); }
-  if (y===18 && G.studying>0 && !G.univ){ G.studying=0; G.edu=2; addLog('Terminaste o ensino secundário. Parabéns!','good'); fx({happy:10}); }
-  if (G.studying>0) {
-    G.studying--; fx({smarts:rnd(1,4)});
-    if (G.univ && G.studying===0){ G.edu=3; G.univ=false; addLog('Licenciaste-te! Tens agora ensino superior.','good'); fx({happy:15,smarts:5}); }
-  }
-  // Mesada da família
-  if (y<18 && y>=6) G.money += [2000,8000,25000][G.family];
-  // Salário
-  if (G.job && G.studying===0){
-    G.jobYears++;
-    const sal = G.job.salary * (1+Math.min(G.jobYears,10)*0.04);
-    G.money += sal; addLog(`Recebeste ${kz(sal)} de salário como ${G.job.name}.`,'good');
-    if (Math.random()<0.12){ G.job=null; addLog('Perdeste o teu emprego devido a cortes na empresa.','bad'); fx({happy:-10}); }
-  }
-  // Negócio
-  if (G.biz){
-    const profit = G.biz.profit * (0.4 + Math.random()*1.4) - G.biz.cost*0.1;
-    G.money += profit;
-    addLog(`O teu negócio (${G.biz.name}) ${profit>=0?'rendeu':'deu prejuízo de'} ${kz(Math.abs(profit))}.`, profit>=0?'good':'bad');
-    if (Math.random()<0.07){ addLog(`O negócio ${G.biz.name} faliu.`,'bad'); G.biz=null; fx({happy:-8}); }
-  }
-  // Custos de vida
-  if (y>=18){
-    const cost = 60000 + G.assets.length*8000 + G.kids*30000 + (G.partner?20000:0);
-    G.money -= cost;
-    if (G.money<0){ fx({happy:-8,health:-2}, 'Estás endividado. O stress pesa.', 'bad'); }
-  }
-  // Ativos valorizam/desvalorizam
-  G.assets.forEach(a=>{ a.value *= a.type==='house' ? 1.04 : 0.9; });
-  // Eventos
-  const ev = EVENTS.filter(e=>y>=e.a[0] && y<=e.a[1]);
-  if (Math.random()<0.75 && ev.length){ const e=pick(ev); fx(e.e, e.t); }
-  // Doença grave aleatória
-  if (y>20 && Math.random()<0.02+y/3000){ fx({health:-rnd(10,25)}, 'Ficaste gravemente doente e foste hospitalizado.', 'bad'); }
-  // Relações
-  if (G.partner && Math.random()<0.06){ addLog(`A relação com ${G.partner} terminou.`,'bad'); G.partner=null; G.married=false; fx({happy:-15}); }
-  // Morte
-  if (G.health<=0 || (y>70 && Math.random()<(y-70)/60) || y>=110){ return die(); }
-  save(); render(); pushRank();
-  if (G.age===18 && G.edu>=2){ toast('Já podes ir à universidade ou procurar emprego!'); }
-}
-$('btnAge').onclick = ageUp;
-
-function die(){
-  G.alive=false;
-  const s = score();
-  const cause = G.health<=0 ? 'por problemas de saúde' : 'de causas naturais';
-  addLog(`${G.name} faleceu aos ${G.age} anos ${cause}.`,'bad');
-  pushRank(); save();
-  $('eTitle').textContent = `${G.name} (${G.age} anos)`;
-  $('eText').textContent = `Nasceu em ${G.prov}. Deixou ${kz(G.money)} e ${G.assets.length} bens${G.kids?`, e ${G.kids} filho(s)`:''}.`;
-  $('eScore').textContent = s.toLocaleString('pt-AO');
-  show('s-end'); loadRank('rankEnd');
-}
-
-/* ---------- Menus ---------- */
-document.querySelectorAll('.nav button').forEach(b=> b.onclick = () => menus[b.dataset.m]());
-const closeBtn = '<button class="btn alt" onclick="closeModal()">Fechar</button>';
-function items(list){ return list.map(i=>`<div class="item"><div><b>${esc(i.name)}</b><small>${esc(i.desc)}</small></div><button class="btn ${i.dis?'alt':''}" ${i.dis?'disabled':''} data-i="${i.id}">${esc(i.btn)}</button></div>`).join(''); }
-function bind(handlers){ $('sheet').querySelectorAll('button[data-i]').forEach(b=> b.onclick = () => handlers[b.dataset.i]()); }
-function done(){ save(); render(); }
-
-const JOBS = [
-  {name:'Ajudante de loja',salary:120000,edu:0,minAge:14},
-  {name:'Vendedor de rua (kinguila)',salary:150000,edu:0,minAge:14},
-  {name:'Taxista / Candongueiro',salary:280000,edu:1,minAge:18},
-  {name:'Operador de caixa',salary:240000,edu:2,minAge:18},
-  {name:'Técnico de informática',salary:420000,edu:2,minAge:18,smarts:50},
-  {name:'Professor',salary:500000,edu:3,minAge:22},
-  {name:'Enfermeiro(a)',salary:550000,edu:3,minAge:22,smarts:55},
-  {name:'Engenheiro(a)',salary:1100000,edu:3,minAge:22,smarts:65},
-  {name:'Médico(a)',salary:1500000,edu:3,minAge:24,smarts:75},
-  {name:'Advogado(a)',salary:1300000,edu:3,minAge:24,smarts:70}
-];
-const menus = {
-  work(){
-    if (G.studying>0) return openModal('<h2>Emprego</h2><p class="muted">Estás a estudar. Termina primeiro.</p>'+closeBtn);
-    const av = JOBS.map((j,i)=>({id:'j'+i,name:j.name,desc:`${kz(j.salary)}/ano • Educação ${['nenhuma','primária','secundária','superior'][j.edu]}${j.smarts?` • Inteligência ${j.smarts}+`:''}`,
-      btn:G.job&&G.job.name===j.name?'Atual':'Candidatar',dis:G.age<j.minAge || G.edu<j.edu || (j.smarts&&G.smarts<j.smarts) || (G.job&&G.job.name===j.name)}));
-    let h = '<h2>Emprego</h2>'+(G.job?`<p class="muted">Cargo atual: ${esc(G.job.name)}</p>`:'')+items(av);
-    if (G.job) h += '<button class="btn alt" data-i="quit">Demitir-me</button>';
-    openModal(h+closeBtn);
-    const hd = {quit(){ G.job=null; G.jobYears=0; addLog('Pediste demissão.'); closeModal(); done(); }};
-    JOBS.forEach((j,i)=> hd['j'+i] = ()=>{
-      if (Math.random() < 0.55 + G.smarts/250 + G.looks/500){ G.job={name:j.name,salary:j.salary}; G.jobYears=0; addLog(`Conseguiste emprego como ${j.name}!`,'good'); fx({happy:8}); }
-      else { addLog(`A tua candidatura a ${j.name} foi rejeitada.`,'bad'); fx({happy:-4}); }
-      closeModal(); done();
-    });
-    bind(hd);
-  },
-  edu(){
-    const canUniv = G.age>=18 && G.edu>=2 && G.studying===0;
-    const fee = 400000;
-    openModal('<h2>Educação</h2>'+items([
-      {id:'univ',name:'Ensino superior (4 anos)',desc:`Propina: ${kz(fee)} • Dá acesso a melhores empregos`,btn:'Matricular',dis:!canUniv||G.money<fee},
-      {id:'study',name:'Estudar por conta própria',desc:'+Inteligência',btn:'Estudar',dis:G.age<6},
-      {id:'course',name:'Curso profissional (Inglês/Informática)',desc:`${kz(80000)} • +Inteligência`,btn:'Pagar',dis:G.age<12||G.money<80000}
-    ])+closeBtn);
-    bind({
-      univ(){ G.money-=fee; G.studying=4; G.univ=true; G.job=null; addLog('Matriculaste-te no ensino superior.','good'); closeModal(); done(); },
-      study(){ fx({smarts:rnd(2,5),happy:-2},'Passaste horas a estudar.','good'); closeModal(); done(); },
-      course(){ fx({smarts:rnd(3,7),money:-80000},'Concluíste um curso profissional.','good'); closeModal(); done(); }
-    });
-  },
-  act(){
-    openModal('<h2>Atividades</h2>'+items([
-      {id:'gym',name:'Treinar / jogar à bola',desc:'+Saúde +Aparência',btn:'Ir',dis:G.age<8},
-      {id:'party',name:'Festa de kizomba',desc:'Custa 15.000 Kz • +Felicidade',btn:'Ir',dis:G.age<16||G.money<15000},
-      {id:'church',name:'Convívio comunitário / igreja',desc:'+Felicidade +Saúde',btn:'Ir',dis:G.age<5},
-      {id:'doctor',name:'Consulta médica',desc:'Custa 30.000 Kz • +Saúde',btn:'Ir',dis:G.money<30000},
-      {id:'bet',name:'Apostar na sorte (candonga)',desc:'Arrisca 50.000 Kz',btn:'Apostar',dis:G.age<18||G.money<50000},
-      {id:'odd',name:'Biscate',desc:'Ganha algum dinheiro',btn:'Fazer',dis:G.age<12}
-    ])+closeBtn);
-    bind({
-      gym(){ fx({health:rnd(3,7),looks:rnd(1,4),happy:2},'Passaste o dia a treinar. Sentes-te forte.'); closeModal(); done(); },
-      party(){ fx({happy:rnd(5,10),money:-15000,health:-1},'Foi uma noite inesquecível de kizomba!'); closeModal(); done(); },
-      church(){ fx({happy:rnd(3,6),health:2},'Passaste um dia agradável com a comunidade.'); closeModal(); done(); },
-      doctor(){ fx({health:rnd(8,15),money:-30000},'Foste ao médico e recuperaste forças.'); closeModal(); done(); },
-      bet(){ if(Math.random()<0.4){ fx({money:100000,happy:8},'Ganhaste 100.000 Kz na aposta!'); } else { fx({money:-50000,happy:-6},'Perdeste a aposta de 50.000 Kz.'); } closeModal(); done(); },
-      odd(){ const m=rnd(5000,25000)*(G.age>=16?2:1); fx({money:m,health:-1},`Fizeste um biscate e ganhaste ${kz(m)}.`,'good'); closeModal(); done(); }
-    });
-  },
-  biz(){
-    const B = [
-      {id:'b0',name:'Banca de zungueira',cost:50000,profit:180000},
-      {id:'b1',name:'Loja de bairro',cost:400000,profit:600000},
-      {id:'b2',name:'Táxi/Candongueiro próprio',cost:1500000,profit:1000000},
-      {id:'b3',name:'Restaurante',cost:3500000,profit:2400000},
-      {id:'b4',name:'Empresa de tecnologia',cost:8000000,profit:6000000}
-    ];
-    let h = '<h2>Negócios</h2>'+(G.biz?`<p class="muted">Tens: ${esc(G.biz.name)}</p>`:'<p class="muted">Podes ter um negócio de cada vez.</p>');
-    h += items(B.map(b=>({id:b.id,name:b.name,desc:`Investimento ${kz(b.cost)} • lucro médio ${kz(b.profit)}/ano`,btn:'Abrir',dis:G.age<18||G.money<b.cost||!!G.biz})));
-    if (G.biz) h += `<button class="btn alt" data-i="sell">Vender negócio (${kz(G.biz.cost*0.6)})</button>`;
-    openModal(h+closeBtn);
-    const hd = {sell(){ G.money+=G.biz.cost*0.6; addLog(`Vendeste o negócio ${G.biz.name}.`); G.biz=null; closeModal(); done(); }};
-    B.forEach(b=> hd[b.id]=()=>{ G.money-=b.cost; G.biz={name:b.name,cost:b.cost,profit:b.profit}; addLog(`Abriste um negócio: ${b.name}.`,'good'); fx({happy:6}); closeModal(); done(); });
-    bind(hd);
-  },
-  shop(){
-    const S = [
-      {id:'s0',name:'Telemóvel',cost:120000,type:'item',val:0.9,e:{happy:4}},
-      {id:'s1',name:'Carro usado',cost:2500000,type:'car',val:1,e:{happy:8,looks:2}},
-      {id:'s2',name:'Carro novo',cost:9000000,type:'car',val:1,e:{happy:12,looks:4}},
-      {id:'s3',name:'Casa no musseque',cost:6000000,type:'house',val:1,e:{happy:8}},
-      {id:'s4',name:'Apartamento em Talatona',cost:25000000,type:'house',val:1,e:{happy:14}},
-      {id:'s5',name:'Moradia de luxo',cost:80000000,type:'house',val:1,e:{happy:25,looks:3}}
-    ];
-    openModal('<h2>Loja</h2>'+items(S.map(s=>({id:s.id,name:s.name,desc:kz(s.cost),btn:'Comprar',dis:G.age<18||G.money<s.cost})))+
-      (G.assets.length?`<p class="muted">Bens: ${G.assets.map(a=>esc(a.name)).join(', ')}</p>`:'')+closeBtn);
-    const hd={};
-    S.forEach(s=> hd[s.id]=()=>{ G.money-=s.cost; G.assets.push({name:s.name,type:s.type,value:s.cost*s.val}); fx(s.e,`Compraste: ${s.name}.`,'good'); closeModal(); done(); });
-    bind(hd);
-  },
-  love(){
-    const M = ['Ana','Maria','Joana','Luísa','Teresa','Isabel'], H = ['João','Pedro','Manuel','António','Carlos','Paulo'];
-    openModal('<h2>Relações</h2>'+(G.partner?`<p class="muted">Parceiro(a): ${esc(G.partner)}${G.married?' (casados)':''} • Filhos: ${G.kids}</p>`:'<p class="muted">Solteiro(a)</p>')+items([
-      {id:'date',name:'Procurar alguém',desc:'Conhecer pessoas novas',btn:'Procurar',dis:G.age<16||!!G.partner},
-      {id:'marry',name:'Casar',desc:`Custa ${kz(500000)}`,btn:'Casar',dis:!G.partner||G.married||G.age<18||G.money<500000},
-      {id:'kid',name:'Ter um filho',desc:'Custo anual mais alto, mas muita alegria',btn:'Tentar',dis:!G.partner||G.age<18||G.age>48},
-      {id:'friends',name:'Sair com amigos',desc:'+Felicidade',btn:'Sair',dis:G.age<6}
-    ])+closeBtn);
-    bind({
-      date(){
-        if (Math.random()<0.35+G.looks/200){ G.partner=pick(G.gender==='M'?M:H); addLog(`Começaste a namorar com ${G.partner}!`,'good'); fx({happy:12}); }
-        else fx({happy:-4},'Não encontraste ninguém especial desta vez.');
-        closeModal(); done();
-      },
-      marry(){ G.money-=500000; G.married=true; fx({happy:18},`Casaste com ${G.partner}. Foi uma festa linda!`,'good'); closeModal(); done(); },
-      kid(){
-        if (Math.random()<0.6){ G.kids++; fx({happy:15,money:-50000},'Nasceu o teu filho! A família cresce.','good'); }
-        else addLog('Ainda não foi desta vez.');
-        closeModal(); done();
-      },
-      friends(){ fx({happy:rnd(3,7)},'Passaste um dia bom com os amigos.'); closeModal(); done(); }
-    });
-  }
-};
-
-$('btnRank').onclick = () => { openModal('<h2>🏆 Top 10 Lendas</h2><div id="rankModal" class="muted">A carregar...</div>'+closeBtn); loadRank('rankModal'); };
-window.closeModal = closeModal;
-}
-
-/* Carrega o Firebase com vários CDNs de reserva e só depois arranca o jogo */
-(function(){
-  const libs = ['app','auth','database'];
-  const bases = [
-    'https://www.gstatic.com/firebasejs/10.12.2/firebase-',
-    'https://cdn.jsdelivr.net/npm/firebase@10.12.2/firebase-',
-    'https://unpkg.com/firebase@10.12.2/firebase-'
-  ];
-  const load = src => new Promise((res,rej)=>{
-    const s = document.createElement('script');
-    s.src = src; s.onload = res; s.onerror = () => rej(new Error(src));
-    document.head.appendChild(s);
-  });
-  (async () => {
-    for (const b of bases) {
-      try {
-        for (const l of libs) await load(b + l + '-compat.js');
-        if (window.firebase && firebase.auth && firebase.database) { boot(); return; }
-      } catch(e) { /* tenta o próximo CDN */ }
-    }
-    const m = document.getElementById('loginMsg');
-    m.textContent = 'Não foi possível carregar o Firebase. Verifica a ligação à internet e abre o jogo a partir de um endereço https ou localhost (não numa pré-visualização).';
-    document.getElementById('btnLogin').disabled = true;
-  })();
-})();
-</script>
+  <noscript>Kwanza Live needs JavaScript.</noscript>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
