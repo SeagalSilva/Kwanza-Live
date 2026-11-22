@@ -7,6 +7,7 @@ export default {
   // Login
   "login.tag": "Um mundo agrícola multijogador. Planta, colhe, negoceia e constrói o teu terreno.",
   "login.google": "Entrar com Google",
+  "login.guest": "Jogar como Convidado",
   "login.how1": "🌱 Semeia na quinta pública",
   "login.how2": "🧺 Colhe e vende por Pontos de Pool ou moedas",
   "login.how3": "🏡 Compra o teu próprio terreno",
@@ -39,6 +40,8 @@ export default {
   // HUD
   "hud.inventory": "Inventário",
   "hud.wallet": "Carteira",
+  "hud.chat": "Chat",
+  "chat.placeholder": "Diz algo no chat...",
   "hud.logout": "Sair",
   "hud.seedSlot": "Sementes de {crop}",
   "hint.controls": "WASD / setas: andar · E: interagir · 1–6: escolher semente · clique: andar / usar",
@@ -61,6 +64,7 @@ export default {
   // Places
   "place.gameMarket": "Mercado do Jogo",
   "place.bazaar": "Bazar dos Jogadores",
+  "place.workstation": "Posto de Trabalho",
   "place.publicFarm": "Quinta Pública",
 
   // Actions
@@ -119,16 +123,36 @@ export default {
   "land.title": "Terreno {id}",
   "land.forSale": "Este terreno está à venda!",
   "land.perks": "Só tu podes semear aqui e mais ninguém pode entrar.",
+  "land.coinPriceNote": "Os terrenos custam 10 moedas de ouro (ou equivalente em moedas: 10 🥇 = 1.000 🥈 = 100.000 🥉).",
+  "land.yourCoins": "As tuas moedas",
   "land.yours": "Este terreno é teu.",
   "land.yoursInfo": "Semeia e colhe à vontade dentro da tua vedação.",
   "land.ownedBy": "Pertence a {name}.",
   "land.closed": "O portão está fechado a visitantes.",
+
+  // Posto de Trabalho
+  "ws.desc": "Troca os teus Pontos de Venda (PP) por moedas de bronze! No final de cada turno de 30 minutos, o servidor converte os teus pontos depositados em moedas de bronze (taxa de 5%).",
+  "ws.readyClaimTitle": "Tens moedas de bronze prontas do turno anterior!",
+  "ws.btnClaim": "Levantar Moedas de Bronze",
+  "ws.shiftTimer": "Fim do turno atual em",
+  "ws.yourPP": "Os teus Pontos de Pool",
+  "ws.currentDeposited": "Depositados neste turno",
+  "ws.estReward": "Recompensa estimada em bronze (5%)",
+  "ws.depositTitle": "Depositar Pontos de Pool para troca",
+  "ws.amountPlaceholder": "Quantidade...",
+  "ws.btnDeposit": "Depositar Pontos",
+  "ws.maxAll": "Tudo",
+  "ws.depositSuccess": "Depositaste {n} PP no Posto de Trabalho!",
+  "ws.claimSuccess": "Recebeste {n} moedas de bronze do teu turno!",
+  "ws.nothingToClaim": "Sem moedas prontas para levantar neste momento.",
+  "ws.errInvalidAmount": "Insere uma quantidade válida e positiva.",
 
   // Messages
   "msg.error": "Algo correu mal. Tenta de novo.",
   "msg.loadError": "Não foi possível carregar o jogo: {msg}",
   "msg.tileTaken": "Alguém semeou aí primeiro.",
   "msg.notYourLand": "Este terreno pertence a outra pessoa.",
+  "msg.notEnoughCoinsLand": "Moedas insuficientes! O terreno custa o equivalente a 10 moedas de ouro (10 🥇 = 100.000 🥉).",
   "msg.growing": "{crop} de {name}: pronto em {time}",
   "msg.belongsTo": "Este {crop} pertence a {name}. Nada de vandalismo no terreno público!",
   "msg.noSeeds": "Sem sementes de {crop}. Compra no Mercado do Jogo!",

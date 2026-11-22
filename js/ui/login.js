@@ -1,10 +1,12 @@
-import { loginWithGoogle } from "../systems/auth.js";
+import { loginWithGoogle, loginAnonymously } from "../systems/auth.js";
 import { t } from "../i18n.js";
 import { $ } from "../utils.js";
 
 export function initLogin() {
   const btn = $("#btn-google");
+  const guestBtn = $("#btn-guest");
   const msg = $("#login-msg");
+
   btn.onclick = async () => {
     msg.textContent = "";
     btn.disabled = true;
@@ -19,4 +21,18 @@ export function initLogin() {
       btn.disabled = false;
     }
   };
+
+  if (guestBtn) {
+    guestBtn.onclick = async () => {
+      msg.textContent = "";
+      guestBtn.disabled = true;
+      try {
+        await loginAnonymously();
+      } catch (e) {
+        msg.textContent = t("login.err.generic", { msg: e.message || e.code || e });
+      } finally {
+        guestBtn.disabled = false;
+      }
+    };
+  }
 }

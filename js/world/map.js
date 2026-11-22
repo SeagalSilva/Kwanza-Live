@@ -9,8 +9,9 @@ export const PUBLIC_FARM = { x0: 14, y0: 12, w: 8, h: 6 };
 export const SPAWN = { x: 24, y: 22.5 };
 
 export const BUILDINGS = [
-  { id: "gameMarket", x: 27, y: 12, w: 5, h: 4, roof: "#cc092f", body: "#ead9b0" },
-  { id: "bazaar",     x: 34, y: 12, w: 7, h: 4, roof: "#2e86de", body: "#efe2c2" }
+  { id: "workstation", x: 6,  y: 12, w: 6, h: 4, roof: "#e67e22", body: "#f5e6cb" },
+  { id: "gameMarket",  x: 27, y: 12, w: 5, h: 4, roof: "#cc092f", body: "#ead9b0" },
+  { id: "bazaar",      x: 34, y: 12, w: 7, h: 4, roof: "#2e86de", body: "#efe2c2" }
 ].map((b) => ({ ...b, front: { x: b.x + Math.floor(b.w / 2) + 0.5, y: b.y + b.h + 0.6 } }));
 
 export const LAND_META = LANDS.map((l) => ({

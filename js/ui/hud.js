@@ -10,6 +10,7 @@ import { sanitizeLook } from "../data/character.js";
 import { drawCharacter } from "../world/character.js";
 import { openInventory } from "./modals/inventory.js";
 import { openWallet } from "./modals/wallet.js";
+import { initChatUI } from "./chat.js";
 
 let lastLabel = null;
 
@@ -17,6 +18,7 @@ export function initHud() {
   $("#btn-inv").onclick = openInventory;
   $("#btn-wallet").onclick = openWallet;
   $("#btn-interact").onclick = () => emit("interact");
+  initChatUI();
   $("#dpad").hidden = !isTouch;
   $("#hud-hint").hidden = isTouch;
 

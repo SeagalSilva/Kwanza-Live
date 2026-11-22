@@ -8,6 +8,7 @@ import { CROPS } from "../data/crops.js";
 import { openGameMarket } from "../ui/modals/gameMarket.js";
 import { openPlayerMarket } from "../ui/modals/playerMarket.js";
 import { openLand } from "../ui/modals/land.js";
+import { openWorkstation } from "../ui/modals/workstation.js";
 
 /** Best thing to interact with right now (or null). */
 export function computeFocus() {
@@ -44,7 +45,12 @@ export function focusLabel(f) {
 
 export function perform(f) {
   if (!f) return;
-  if (f.kind === "building") return f.id === "gameMarket" ? openGameMarket() : openPlayerMarket();
+  if (f.kind === "building") {
+    if (f.id === "gameMarket") return openGameMarket();
+    if (f.id === "bazaar") return openPlayerMarket();
+    if (f.id === "workstation") return openWorkstation();
+    return;
+  }
   if (f.kind === "land") return openLand(f.id);
   // face the tile
   const dx = f.tx + 0.5 - me.x, dy = f.ty + 0.5 - me.y;

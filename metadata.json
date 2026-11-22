@@ -1,0 +1,9 @@
+{
+  "name": "Kwanza Live",
+  "description": "Multiplayer 2D farming world with planting, harvesting, trading, and private lands.",
+  "prompt": "Multiplayer 2D farming game",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

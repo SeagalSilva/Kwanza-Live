@@ -2,6 +2,7 @@
 import { db, ref, set, update, onValue, onChildAdded, onChildChanged, onChildRemoved, onDisconnect, serverTimestamp } from "../firebase.js";
 import { S, now } from "../state.js";
 import { sanitizeLook } from "../data/character.js";
+import { registerSpeechBubble } from "./chat.js";
 
 const STALE_MS = 60_000;
 let offs = [];
@@ -29,6 +30,10 @@ export function startPresence(me) {
     const p = S.players[s.key];
     if (!p) S.players[s.key] = { ...v, look: sanitizeLook(v.look), dx: v.x, dy: v.y, phase: 0 };
     else Object.assign(p, v, { look: sanitizeLook(v.look) });
+
+    if (v.chat && v.chat.text) {
+      registerSpeechBubble(s.key, v.chat.text, v.chat.at || Date.now());
+    }
   };
   const players = ref(db, "world/players");
   offs.push(onChildAdded(players, upsert), onChildChanged(players, upsert));

@@ -50,6 +50,82 @@ function pill(ctx, text, x, y, { bg = "rgba(10,18,14,.72)", fg = "#fff", size = 
   ctx.fillText(text, x, y + 0.5);
 }
 
+function drawSpeechBubble(ctx, text, cx, bottomY, alpha = 1) {
+  if (!text || alpha <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+  ctx.font = `600 11px ${UI_FONT}`;
+
+  const maxW = 150;
+  const words = text.split(" ");
+  const lines = [];
+  let curLine = "";
+  for (const w of words) {
+    const testLine = curLine ? `${curLine} ${w}` : w;
+    if (ctx.measureText(testLine).width > maxW && curLine) {
+      lines.push(curLine);
+      curLine = w;
+      if (lines.length >= 2) break;
+    } else {
+      curLine = testLine;
+    }
+  }
+  if (curLine && lines.length < 3) lines.push(curLine);
+
+  let textW = 0;
+  for (const line of lines) {
+    textW = Math.max(textW, ctx.measureText(line).width);
+  }
+  const padX = 9, padY = 5, lineH = 14;
+  const bubbleW = Math.max(34, textW + padX * 2);
+  const bubbleH = lines.length * lineH + padY * 2;
+  const bubbleX = cx - bubbleW / 2;
+  const bubbleY = bottomY - bubbleH - 6;
+
+  // Bubble shadow
+  ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bubbleX + 1, bubbleY + 2, bubbleW, bubbleH, 8);
+  else ctx.rect(bubbleX + 1, bubbleY + 2, bubbleW, bubbleH);
+  ctx.fill();
+
+  // Bubble body
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, 8);
+  else ctx.rect(bubbleX, bubbleY, bubbleW, bubbleH);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Pointer
+  ctx.beginPath();
+  ctx.moveTo(cx - 5, bubbleY + bubbleH);
+  ctx.lineTo(cx, bottomY);
+  ctx.lineTo(cx + 5, bubbleY + bubbleH);
+  ctx.closePath();
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
+  ctx.stroke();
+
+  // Clean boundary over pointer
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(cx - 4, bubbleY + bubbleH - 1, 8, 2);
+
+  // Text
+  ctx.fillStyle = "#121b15";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (let i = 0; i < lines.length; i++) {
+    const ly = bubbleY + padY + i * lineH + lineH / 2;
+    ctx.fillText(lines[i], cx, ly);
+  }
+
+  ctx.restore();
+}
+
 const fenceColor = (landId) => {
   const l = S.lands[landId];
   if (!l) return "#a8824a";
@@ -236,16 +312,36 @@ export function render(ctx, g) {
   const f = PUBLIC_FARM;
   pill(ctx, `🌾 ${t("place.publicFarm")}`, (f.x0 + f.w / 2) * TILE, (f.y0 - 0.45) * TILE, { size: 12, border: "#59d17a" });
   for (const b of BUILDINGS) {
-    pill(ctx, `${b.id === "gameMarket" ? "🏪" : "🧺"} ${t(`place.${b.id}`)}`, (b.x + b.w / 2) * TILE, (b.y - 0.35) * TILE, { size: 12, border: "#f5c518" });
+    const icon = b.id === "gameMarket" ? "🏪" : b.id === "bazaar" ? "🧺" : "🔨";
+    pill(ctx, `${icon} ${t(`place.${b.id}`)}`, (b.x + b.w / 2) * TILE, (b.y - 0.35) * TILE, { size: 12, border: "#f5c518" });
   }
   for (const l of LAND_META) {
     if (l.x0 > x1 + 1 || l.x0 + LAND_SIZE < x0 - 1 || l.y0 > y1 + 1 || l.y0 + LAND_SIZE < y0 - 1) continue;
     const owner = S.lands[l.id];
-    const text = owner ? `👑 ${owner.ownerName}` : `🏷️ ${fmtNum(l.price)} PP`;
+    const text = owner ? `👑 ${owner.ownerName}` : `🏷️ 10 🥇`;
     pill(ctx, text, (l.x0 + LAND_SIZE / 2) * TILE, (l.y0 - 0.4) * TILE, {
       size: 10, border: owner ? (owner.owner === S.uid ? "#f5c518" : "#d9534f") : null
     });
   }
   for (const o of g.others) pill(ctx, o.p.name || "?", o.p.dx * TILE, o.p.dy * TILE - 46, { size: 10 });
   pill(ctx, S.profile?.username || "", g.me.x * TILE, g.me.y * TILE - 46, { size: 11, border: "#f5c518" });
+
+  // ── speech bubbles (above name tag) ──
+  const nowTime = Date.now();
+  if (S.chat?.bubbles) {
+    for (const o of g.others) {
+      const b = S.chat.bubbles.get(o.id);
+      if (b && b.expiresAt > nowTime) {
+        const remaining = b.expiresAt - nowTime;
+        const alpha = remaining < 1000 ? remaining / 1000 : 1;
+        drawSpeechBubble(ctx, b.text, o.p.dx * TILE, o.p.dy * TILE - 54, alpha);
+      }
+    }
+    const myBubble = S.chat.bubbles.get(S.uid);
+    if (myBubble && myBubble.expiresAt > nowTime) {
+      const remaining = myBubble.expiresAt - nowTime;
+      const alpha = remaining < 1000 ? remaining / 1000 : 1;
+      drawSpeechBubble(ctx, myBubble.text, g.me.x * TILE, g.me.y * TILE - 54, alpha);
+    }
+  }
 }

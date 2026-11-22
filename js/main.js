@@ -5,6 +5,7 @@ import { $ } from "./utils.js";
 import { watchAuth, logout } from "./systems/auth.js";
 import { loadProfile, ensureSave } from "./systems/profile.js";
 import { startSync, stopSync } from "./systems/sync.js";
+import { startChatSync, stopChatSync } from "./systems/chat.js";
 import { showScreen } from "./ui/screens.js";
 import { initLogin } from "./ui/login.js";
 import { startOnboarding } from "./ui/onboarding.js";
@@ -22,12 +23,14 @@ initLogin();
 function teardown() {
   stopGame();
   stopSync();
+  stopChatSync();
   resetState();
 }
 
 async function enterGame() {
   const hasSave = await startSync(S.uid);
   if (!hasSave) await ensureSave(S.uid);
+  startChatSync();
   showScreen("game");
   if (!hudReady) { initHud(); hudReady = true; }
   startGame();

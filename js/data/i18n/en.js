@@ -7,6 +7,7 @@ export default {
   // Login
   "login.tag": "A multiplayer farming world. Plant, harvest, trade and build your land.",
   "login.google": "Sign in with Google",
+  "login.guest": "Play as Guest",
   "login.how1": "🌱 Plant seeds on the public farm",
   "login.how2": "🧺 Harvest and sell for Pool Points or coins",
   "login.how3": "🏡 Buy your own land",
@@ -39,6 +40,8 @@ export default {
   // HUD
   "hud.inventory": "Inventory",
   "hud.wallet": "Wallet",
+  "hud.chat": "Chat",
+  "chat.placeholder": "Say something in chat...",
   "hud.logout": "Sign out",
   "hud.seedSlot": "{crop} seeds",
   "hint.controls": "WASD / arrows: move · E: interact · 1–6: choose seed · click: walk / use",
@@ -61,6 +64,7 @@ export default {
   // Places
   "place.gameMarket": "Game Market",
   "place.bazaar": "Players' Bazaar",
+  "place.workstation": "Job Center",
   "place.publicFarm": "Public Farm",
 
   // Actions
@@ -119,16 +123,36 @@ export default {
   "land.title": "Land {id}",
   "land.forSale": "This plot is for sale!",
   "land.perks": "Only you can plant here and nobody else can enter.",
+  "land.coinPriceNote": "Plots cost 10 gold coins (or equivalent in coins: 10 🥇 = 1,000 🥈 = 100,000 🥉).",
+  "land.yourCoins": "Your coins",
   "land.yours": "This land is yours.",
   "land.yoursInfo": "Plant and harvest freely inside your fence.",
   "land.ownedBy": "Owned by {name}.",
   "land.closed": "The gate is closed to visitors.",
+
+  // Workstation (Posto de Trabalho)
+  "ws.desc": "Exchange your sales Pool Points (PP) for bronze coins! At the end of each 30-minute shift, the server converts your deposited points into bronze coins (5% rate).",
+  "ws.readyClaimTitle": "You have bronze coins ready from a completed shift!",
+  "ws.btnClaim": "Claim Bronze Coins",
+  "ws.shiftTimer": "Current shift ends in",
+  "ws.yourPP": "Your Pool Points",
+  "ws.currentDeposited": "Deposited for this shift",
+  "ws.estReward": "Estimated bronze reward (5%)",
+  "ws.depositTitle": "Deposit Pool Points for conversion",
+  "ws.amountPlaceholder": "Enter amount...",
+  "ws.btnDeposit": "Deposit Points",
+  "ws.maxAll": "All",
+  "ws.depositSuccess": "Deposited {n} PP into the Job Center!",
+  "ws.claimSuccess": "Claimed {n} bronze coins from your shift!",
+  "ws.nothingToClaim": "No coins to claim right now.",
+  "ws.errInvalidAmount": "Enter a valid positive amount.",
 
   // Messages
   "msg.error": "Something went wrong. Try again.",
   "msg.loadError": "Could not load your game: {msg}",
   "msg.tileTaken": "Somebody planted there first.",
   "msg.notYourLand": "This land belongs to someone else.",
+  "msg.notEnoughCoinsLand": "Insufficient coins! Land costs 10 gold coins equivalent (10 🥇 = 100,000 🥉).",
   "msg.growing": "{crop} by {name}: ready in {time}",
   "msg.belongsTo": "This {crop} belongs to {name}. No vandalism on public land!",
   "msg.noSeeds": "No {crop} seeds. Buy some at the Game Market!",

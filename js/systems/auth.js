@@ -1,4 +1,4 @@
-import { auth, provider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from "../firebase.js";
+import { auth, provider, signInWithPopup, signInWithRedirect, signInAnonymously, onAuthStateChanged, signOut } from "../firebase.js";
 
 export async function loginWithGoogle() {
   try {
@@ -10,6 +10,10 @@ export async function loginWithGoogle() {
     }
     throw e;
   }
+}
+
+export async function loginAnonymously() {
+  return await signInAnonymously(auth);
 }
 
 export const watchAuth = (cb) => onAuthStateChanged(auth, cb);

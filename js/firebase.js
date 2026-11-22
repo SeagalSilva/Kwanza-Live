@@ -1,7 +1,7 @@
 // Firebase initialisation (modular SDK loaded from the official CDN).
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signInAnonymously,
   onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
@@ -18,7 +18,7 @@ export const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ prompt: "select_account" });
 
 export {
-  signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut,
+  signInWithPopup, signInWithRedirect, signInAnonymously, onAuthStateChanged, signOut,
   ref, onValue, onChildAdded, onChildChanged, onChildRemoved,
   get, set, update, push, remove, onDisconnect, serverTimestamp, increment,
   query, orderByChild, limitToLast

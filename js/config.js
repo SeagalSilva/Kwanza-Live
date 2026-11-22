@@ -3,15 +3,17 @@
 //  Edit values here to rebalance the game.
 // ─────────────────────────────────────────────────────────────
 
+const runtimeConfig = (typeof window !== "undefined" && window.__FIREBASE_CONFIG__) ? window.__FIREBASE_CONFIG__ : {};
+
 export const firebaseConfig = {
-  apiKey: "AIzaSyBcjcNzMLCv-jSCpy9N29GmEESVqRn_xRU",
-  authDomain: "kwanzaclick.firebaseapp.com",
-  databaseURL: "https://kwanzaclick-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "kwanzaclick",
-  storageBucket: "kwanzaclick.appspot.com",
-  messagingSenderId: "140060118241",
-  appId: "1:140060118241:web:3fdf84bb8654844a74bba0",
-  measurementId: "G-QC255LPQWN"
+  apiKey: runtimeConfig.apiKey || "AIzaSyBcjcNzMLCv-jSCpy9N29GmEESVqRn_xRU",
+  authDomain: runtimeConfig.authDomain || "kwanzaclick.firebaseapp.com",
+  databaseURL: runtimeConfig.databaseURL || "https://kwanzaclick-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: runtimeConfig.projectId || "kwanzaclick",
+  storageBucket: runtimeConfig.storageBucket || "kwanzaclick.appspot.com",
+  messagingSenderId: runtimeConfig.messagingSenderId || "140060118241",
+  appId: runtimeConfig.appId || "1:140060118241:web:3fdf84bb8654844a74bba0",
+  measurementId: runtimeConfig.measurementId || "G-QC255LPQWN"
 };
 
 export const FIREBASE_VERSION = "10.12.2";
