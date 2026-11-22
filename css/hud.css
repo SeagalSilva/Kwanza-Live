@@ -1,0 +1,71 @@
+/* In-game HUD */
+.hud { position: absolute; inset: 0; pointer-events: none; z-index: 60; }
+.hud > * { pointer-events: auto; }
+
+/* character portrait + wallet (always visible, above modals) */
+.hud-me {
+  position: absolute; top: calc(10px + var(--safe-t)); left: 10px; display: flex; gap: 8px; align-items: center;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 6px 12px 6px 6px;
+  pointer-events: none; z-index: 70;
+}
+#hud-portrait {
+  width: 56px; height: 56px; border-radius: 14px; border: 2px solid var(--gold);
+  background: radial-gradient(circle at 50% 80%, #5da34f, #2e5a2a);
+}
+.hud-me-info strong { display: block; font-size: 15px; margin-bottom: 3px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wallet { display: flex; flex-wrap: wrap; gap: 4px 8px; max-width: 190px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+.chip b { font-variant-numeric: tabular-nums; }
+
+.hud-side {
+  position: absolute; top: calc(60px + var(--safe-t)); right: 10px; display: flex; flex-direction: column; gap: 8px;
+}
+
+/* seed hotbar */
+.hotbar {
+  position: absolute; left: 50%; bottom: calc(12px + var(--safe-b)); transform: translateX(-50%);
+  display: flex; gap: 6px; padding: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+  max-width: 96vw;
+}
+.slot {
+  position: relative; width: 46px; height: 52px; border-radius: 12px; background: var(--panel-2);
+  border: 2px solid transparent; display: grid; place-items: center;
+}
+.slot .ico { font-size: 24px; }
+.slot .key { position: absolute; top: 2px; left: 5px; font-size: 9px; color: var(--mut); }
+.slot .n { position: absolute; bottom: 1px; right: 4px; font-size: 11px; }
+.slot.empty .ico { opacity: .35; filter: grayscale(.8); }
+.slot.on { border-color: var(--gold); background: #2a3d1d; transform: translateY(-4px); }
+
+/* touch controls */
+.dpad {
+  position: absolute; left: 14px; bottom: calc(84px + var(--safe-b)); width: 150px; height: 150px;
+  display: grid; grid-template: 1fr 1fr 1fr / 1fr 1fr 1fr; gap: 4px;
+}
+.dpad button {
+  background: rgba(16, 28, 21, .75); border: 1px solid var(--line); border-radius: 14px; font-size: 20px;
+  touch-action: none;
+}
+.dpad [data-dir="up"] { grid-area: 1 / 2; }
+.dpad [data-dir="left"] { grid-area: 2 / 1; }
+.dpad [data-dir="right"] { grid-area: 2 / 3; }
+.dpad [data-dir="down"] { grid-area: 3 / 2; }
+
+.interact {
+  position: absolute; right: 14px; bottom: calc(84px + var(--safe-b)); min-width: 110px; max-width: 60vw;
+  padding: 16px 18px; border-radius: 999px; background: var(--gold); color: #1b1500;
+  font-weight: 800; font-size: 16px; box-shadow: 0 8px 24px rgba(0, 0, 0, .5); animation: bounce 1.4s infinite;
+}
+.interact:active { transform: scale(.95); }
+@keyframes bounce { 50% { transform: translateY(-4px); } }
+
+.control-hint {
+  position: absolute; left: 12px; bottom: calc(14px + var(--safe-b)); max-width: 230px; font-size: 11px;
+  color: var(--mut); background: rgba(10, 18, 14, .6); padding: 6px 10px; border-radius: 10px; pointer-events: none;
+}
+@media (max-width: 1100px) { .control-hint { display: none; } }
+@media (max-width: 420px) {
+  .slot { width: 40px; height: 48px; }
+  .slot .ico { font-size: 21px; }
+  .wallet { max-width: 150px; }
+}

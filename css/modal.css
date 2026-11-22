@@ -1,0 +1,38 @@
+/* Modal windows (markets, inventory, wallet, land) */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 65; background: rgba(0, 0, 0, .55);
+  display: flex; align-items: center; justify-content: center; padding: 84px 12px 12px;
+}
+.modal {
+  width: min(520px, 100%); max-height: 100%; display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--line); border-top: 3px solid var(--gold);
+  border-radius: 18px; box-shadow: 0 24px 70px rgba(0, 0, 0, .6); animation: pop .18s ease-out;
+}
+.modal header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 6px; }
+.modal header h2 { font-size: 18px; }
+.modal .x { width: 34px; height: 34px; border-radius: 50%; background: var(--panel-2); }
+.modal-body { padding: 6px 16px 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+.row {
+  display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, .06);
+}
+.row .grow { flex: 1; min-width: 0; }
+.row small { display: block; color: var(--mut); font-size: 12px; margin-top: 2px; }
+.ico-lg { font-size: 26px; width: 44px; text-align: center; flex: none; }
+.qty { color: var(--mut); font-size: 13px; font-weight: 600; }
+.btns { display: flex; gap: 6px; align-items: center; }
+.btns.col { flex-direction: column; align-items: flex-end; }
+.arrow { color: var(--mut); }
+
+.tabs { display: flex; gap: 6px; margin: 8px 0 10px; background: var(--panel-2); border-radius: 12px; padding: 4px; }
+.tabs button { flex: 1; padding: 9px 6px; border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--mut); }
+.tabs button.on { background: var(--gold); color: #1b1500; }
+
+.balance { padding: 8px 0 2px; color: var(--mut); font-size: 14px; display: flex; gap: 8px; align-items: center; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid2 .btn { font-size: 13px; padding: 10px 8px; }
+
+.land-card { text-align: center; padding: 10px 0 4px; display: grid; gap: 10px; }
+.land-card .big { font-size: 56px; }
+.land-card .price { font-size: 22px; }
+#pm-create { width: 100%; margin-top: 14px; }

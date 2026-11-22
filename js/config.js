@@ -1,0 +1,37 @@
+// ─────────────────────────────────────────────────────────────
+//  Kwanza Live — global configuration
+//  Edit values here to rebalance the game.
+// ─────────────────────────────────────────────────────────────
+
+export const firebaseConfig = {
+  apiKey: "AIzaSyBcjcNzMLCv-jSCpy9N29GmEESVqRn_xRU",
+  authDomain: "kwanzaclick.firebaseapp.com",
+  databaseURL: "https://kwanzaclick-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "kwanzaclick",
+  storageBucket: "kwanzaclick.appspot.com",
+  messagingSenderId: "140060118241",
+  appId: "1:140060118241:web:3fdf84bb8654844a74bba0",
+  measurementId: "G-QC255LPQWN"
+};
+
+export const FIREBASE_VERSION = "10.12.2";
+
+// World
+export const TILE = 32;          // pixels per tile (logical)
+export const MAP_W = 48;
+export const MAP_H = 40;
+export const SPEED = 4.2;        // tiles per second
+
+// Farming
+export const PUBLIC_FARM_LIMIT = 8;                 // max active crops per player on public land
+export const WITHER_AFTER_RIPE_MS = 20 * 60 * 1000; // abandoned ripe crops wither after this
+export const MAX_LANDS_PER_PLAYER = 3;
+
+// New players
+export const START = {
+  pp: 100,
+  inv: { seed_corn: 3 }
+};
+
+// Market limits
+export const MAX_LISTING_PRICE = 1_000_000;

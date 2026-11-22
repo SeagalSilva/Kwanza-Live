@@ -1,0 +1,251 @@
+// Canvas renderer: ground, farms, lands, buildings, trees and characters.
+import { TILE, MAP_W, MAP_H } from "../config.js";
+import { S } from "../state.js";
+import { t, fmtNum } from "../i18n.js";
+import { GRID, T, PUBLIC_FARM, BUILDINGS, LAND_META, fenceIndex, farmIndex } from "./map.js";
+import { LAND_SIZE } from "../data/lands.js";
+import { CROPS } from "../data/crops.js";
+import { cropState, tileData } from "../systems/farming.js";
+import { sanitizeLook } from "../data/character.js";
+import { drawCharacter } from "./character.js";
+import { hash2, colorFromString } from "../utils.js";
+
+export const view = { cw: 0, ch: 0, zoom: 1, dpr: 1, camX: 0, camY: 0 };
+
+const EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+const UI_FONT = "system-ui,-apple-system,Segoe UI,Roboto,sans-serif";
+
+export function resize(canvas) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cw = canvas.clientWidth, ch = canvas.clientHeight;
+  canvas.width = Math.round(cw * dpr);
+  canvas.height = Math.round(ch * dpr);
+  const tilesAcross = cw < 560 ? 13 : cw < 1000 ? 18 : 24;
+  Object.assign(view, { cw, ch, dpr, zoom: cw / (tilesAcross * TILE) });
+}
+
+/** Screen pixel → world tile coordinates (floats). */
+export const screenToWorld = (px, py) => ({
+  x: (px / view.zoom + view.camX) / TILE,
+  y: (py / view.zoom + view.camY) / TILE
+});
+
+// ── small drawing helpers ────────────────────────────────────
+function emoji(ctx, ch, x, y, size) {
+  ctx.font = `${size}px ${EMOJI}`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(ch, x, y);
+}
+
+function pill(ctx, text, x, y, { bg = "rgba(10,18,14,.72)", fg = "#fff", size = 11, border = null } = {}) {
+  ctx.font = `600 ${size}px ${UI_FONT}`;
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const w = ctx.measureText(text).width + 12, h = size + 7;
+  ctx.fillStyle = bg;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x - w / 2, y - h / 2, w, h, h / 2); else ctx.rect(x - w / 2, y - h / 2, w, h);
+  ctx.fill();
+  if (border) { ctx.strokeStyle = border; ctx.lineWidth = 1.5; ctx.stroke(); }
+  ctx.fillStyle = fg;
+  ctx.fillText(text, x, y + 0.5);
+}
+
+const fenceColor = (landId) => {
+  const l = S.lands[landId];
+  if (!l) return "#a8824a";
+  return l.owner === S.uid ? "#f5c518" : "#d9534f";
+};
+
+// ── ground ───────────────────────────────────────────────────
+function drawGround(ctx, tx, ty, time) {
+  const x = tx * TILE, y = ty * TILE, g = GRID[ty][tx];
+  if (g === T.PATH) {
+    ctx.fillStyle = (tx + ty) % 2 ? "#c8a56b" : "#c2a064";
+    ctx.fillRect(x, y, TILE, TILE);
+    if (hash2(tx, ty) < 0.4) { ctx.fillStyle = "rgba(0,0,0,.08)"; ctx.fillRect(x + 6 + hash2(ty, tx) * 16, y + 8 + hash2(tx, tx) * 14, 3, 2); }
+  } else if (g === T.WATER) {
+    ctx.fillStyle = "#3a7fc1"; ctx.fillRect(x, y, TILE, TILE);
+    ctx.fillStyle = "rgba(255,255,255,.2)";
+    const o = (Math.sin(time * 2 + tx * 0.9 + ty * 0.5) + 1) * 4;
+    ctx.fillRect(x + 4 + o, y + 10, 10, 2); ctx.fillRect(x + 14 - o * 0.5, y + 22, 9, 2);
+  } else if (g === T.SOIL) {
+    ctx.fillStyle = "#6a4627"; ctx.fillRect(x, y, TILE, TILE);
+    ctx.fillStyle = "#583a1f";
+    for (let i = 0; i < 4; i++) ctx.fillRect(x + 2, y + 5 + i * 7, TILE - 4, 2);
+    ctx.strokeStyle = "rgba(0,0,0,.18)"; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, TILE - 1, TILE - 1);
+  } else {
+    ctx.fillStyle = (tx + ty) % 2 ? "#5da34f" : "#5a9c4c";
+    ctx.fillRect(x, y, TILE, TILE);
+    const h = hash2(tx * 7, ty * 13);
+    if (h < 0.08) {
+      ctx.strokeStyle = "#3f7d36"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x + 10, y + 22); ctx.lineTo(x + 12, y + 14); ctx.moveTo(x + 14, y + 22); ctx.lineTo(x + 16, y + 15); ctx.stroke();
+    } else if (h < 0.12) {
+      ctx.fillStyle = ["#fff", "#ffd93d", "#ff9ecb"][Math.floor(h * 100) % 3];
+      ctx.beginPath(); ctx.arc(x + 8 + hash2(tx, ty) * 16, y + 8 + hash2(ty, tx) * 16, 2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+function drawFence(ctx, tx, ty) {
+  const key = `${tx}_${ty}`, id = fenceIndex.get(key);
+  const x = tx * TILE, y = ty * TILE, cx = x + TILE / 2, cy = y + TILE / 2;
+  const col = fenceColor(id);
+  const land = S.lands[id];
+  const closed = GRID[ty][tx] === T.GATE && land && land.owner !== S.uid;
+
+  ctx.fillStyle = col;
+  if (GRID[ty][tx] === T.GATE && !closed) {
+    ctx.fillRect(x + 3, y + 8, 4, 20); ctx.fillRect(x + TILE - 7, y + 8, 4, 20);
+    return;
+  }
+  const nb = (dx, dy) => fenceIndex.get(`${tx + dx}_${ty + dy}`) === id;
+  const rail = (rx, ry, w, h) => { ctx.fillStyle = col; ctx.fillRect(rx, ry, w, h); };
+  if (nb(-1, 0) || closed) { rail(x, cy - 7, TILE / 2, 3); rail(x, cy + 3, TILE / 2, 3); }
+  if (nb(1, 0) || closed) { rail(cx, cy - 7, TILE / 2, 3); rail(cx, cy + 3, TILE / 2, 3); }
+  if (nb(0, -1)) { rail(cx - 7, y, 3, TILE / 2); rail(cx + 4, y, 3, TILE / 2); }
+  if (nb(0, 1)) { rail(cx - 7, cy, 3, TILE / 2); rail(cx + 4, cy, 3, TILE / 2); }
+  ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(cx - 3, y + 6, 7, 22);
+  ctx.fillStyle = col; ctx.fillRect(cx - 3, y + 5, 6, 21);
+}
+
+// ── crops ────────────────────────────────────────────────────
+function drawCrop(ctx, tx, ty, scope, key, time) {
+  const tile = tileData(scope, key);
+  if (!tile) return;
+  const st = cropState(tile);
+  const x = tx * TILE, y = ty * TILE, cx = x + TILE / 2, cy = y + TILE / 2;
+  const mine = tile.by === S.uid;
+
+  if (st.stage === "growing") {
+    emoji(ctx, st.progress < 0.5 ? "🌱" : "🌿", cx, cy + 1, st.progress < 0.5 ? 15 : 20);
+    ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(x + 5, y + TILE - 7, TILE - 10, 4);
+    ctx.fillStyle = "#59d17a"; ctx.fillRect(x + 5, y + TILE - 7, (TILE - 10) * st.progress, 4);
+  } else if (st.stage === "ripe") {
+    const bob = Math.sin(time * 4 + tx) * 1.5;
+    if (mine) { ctx.strokeStyle = `rgba(245,197,24,${0.5 + Math.sin(time * 5) * 0.3})`; ctx.lineWidth = 2; ctx.strokeRect(x + 2, y + 2, TILE - 4, TILE - 4); }
+    emoji(ctx, CROPS[tile.crop].emoji, cx, cy + bob, 22);
+    if (mine) emoji(ctx, "✨", x + TILE - 7, y + 8 + bob, 9);
+  } else if (st.stage === "withered") {
+    emoji(ctx, "🥀", cx, cy, 18);
+  }
+  // owner marker (public farm only)
+  if (scope === "public" && tile.by) {
+    ctx.fillStyle = mine ? "#f5c518" : colorFromString(tile.by);
+    ctx.beginPath(); ctx.arc(x + 5, y + 5, 2.6, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// ── buildings & trees ────────────────────────────────────────
+function drawBuilding(ctx, b) {
+  const x = b.x * TILE, y = b.y * TILE, w = b.w * TILE, h = b.h * TILE;
+  ctx.fillStyle = "rgba(0,0,0,.2)"; ctx.fillRect(x + 4, y + h - 4, w, 8);
+  ctx.fillStyle = b.body; ctx.fillRect(x, y + TILE * 1.1, w, h - TILE * 1.1);
+  ctx.fillStyle = "rgba(0,0,0,.1)"; ctx.fillRect(x, y + h - 6, w, 6);
+  // roof
+  ctx.fillStyle = b.roof;
+  ctx.beginPath(); ctx.moveTo(x - 8, y + TILE * 1.4); ctx.lineTo(x + 12, y); ctx.lineTo(x + w - 12, y); ctx.lineTo(x + w + 8, y + TILE * 1.4); ctx.closePath(); ctx.fill();
+  // awning stripes
+  for (let i = 0; i < b.w * 2; i++) {
+    ctx.fillStyle = i % 2 ? "#fff" : b.roof;
+    ctx.fillRect(x + i * (TILE / 2), y + TILE * 1.4, TILE / 2, 10);
+  }
+  // door
+  const dx = (b.front.x - 0.5) * TILE;
+  ctx.fillStyle = "#4a2e17"; ctx.fillRect(dx + 4, y + h - 26, TILE - 8, 26);
+  ctx.fillStyle = "#f5c518"; ctx.fillRect(dx + TILE - 10, y + h - 14, 3, 3);
+  // windows
+  ctx.fillStyle = "#9ed0f0";
+  for (let i = 0; i < b.w; i++) {
+    if (Math.abs(i + 0.5 - b.w / 2) < 1.2) continue;
+    ctx.fillRect(x + i * TILE + 7, y + TILE * 2.3, TILE - 14, 16);
+  }
+}
+
+function drawTree(ctx, tx, ty) {
+  const x = tx * TILE + TILE / 2, y = (ty + 1) * TILE;
+  const v = hash2(tx, ty);
+  ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.beginPath(); ctx.ellipse(x, y - 2, 13, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#6b4423"; ctx.fillRect(x - 3, y - 16, 6, 16);
+  const g1 = v < 0.5 ? "#2f7d32" : "#388e3c", g2 = v < 0.5 ? "#3d9a41" : "#43a047";
+  ctx.fillStyle = g1; ctx.beginPath(); ctx.arc(x, y - 26, 13, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(x - 4, y - 30, 8, 0, Math.PI * 2); ctx.fill();
+}
+
+// ── main render ──────────────────────────────────────────────
+/**
+ * g = { me, others: [{p, id}], focus, time }
+ */
+export function render(ctx, g) {
+  const { cw, ch, zoom, dpr } = view;
+  const vw = cw / zoom, vh = ch / zoom, worldW = MAP_W * TILE, worldH = MAP_H * TILE;
+  let cx = g.me.x * TILE - vw / 2, cy = g.me.y * TILE - vh / 2;
+  cx = worldW <= vw ? (worldW - vw) / 2 : Math.max(0, Math.min(worldW - vw, cx));
+  cy = worldH <= vh ? (worldH - vh) / 2 : Math.max(0, Math.min(worldH - vh, cy));
+  view.camX = cx; view.camY = cy;
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = "#0e1712"; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  const s = dpr * zoom;
+  ctx.setTransform(s, 0, 0, s, -cx * s, -cy * s);
+
+  const x0 = Math.max(0, Math.floor(cx / TILE)), x1 = Math.min(MAP_W - 1, Math.ceil((cx + vw) / TILE));
+  const y0 = Math.max(0, Math.floor(cy / TILE)), y1 = Math.min(MAP_H - 1, Math.ceil((cy + vh) / TILE));
+  const entities = [];
+
+  for (let ty = y0; ty <= y1; ty++) {
+    for (let tx = x0; tx <= x1; tx++) {
+      drawGround(ctx, tx, ty, g.time);
+      const type = GRID[ty][tx];
+      if (type === T.FENCE || type === T.GATE) drawFence(ctx, tx, ty);
+      if (type === T.TREE) entities.push({ y: (ty + 1) * TILE, draw: () => drawTree(ctx, tx, ty) });
+    }
+  }
+
+  // crops
+  for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
+    const f = farmIndex.get(`${tx}_${ty}`);
+    if (f) drawCrop(ctx, tx, ty, f.scope, `${tx}_${ty}`, g.time);
+  }
+
+  // focus highlight
+  if (g.focus?.kind === "tile") {
+    ctx.strokeStyle = `rgba(255,255,255,${0.6 + Math.sin(g.time * 6) * 0.3})`;
+    ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+    ctx.strokeRect(g.focus.tx * TILE + 1, g.focus.ty * TILE + 1, TILE - 2, TILE - 2);
+    ctx.setLineDash([]);
+  }
+
+  for (const b of BUILDINGS) entities.push({ y: (b.y + b.h) * TILE, draw: () => drawBuilding(ctx, b) });
+
+  const look = sanitizeLook(S.profile?.look);
+  for (const o of g.others) {
+    entities.push({
+      y: o.p.dy * TILE,
+      draw: () => drawCharacter(ctx, o.p.dx * TILE, o.p.dy * TILE, o.p.look, { dir: o.p.d || "down", phase: o.p.phase, moving: !!o.p.m })
+    });
+  }
+  entities.push({
+    y: g.me.y * TILE,
+    draw: () => drawCharacter(ctx, g.me.x * TILE, g.me.y * TILE, look, { dir: g.me.dir, phase: g.me.phase, moving: g.me.moving })
+  });
+
+  entities.sort((a, b) => a.y - b.y).forEach((e) => e.draw());
+
+  // ── labels (drawn on top) ──
+  const f = PUBLIC_FARM;
+  pill(ctx, `🌾 ${t("place.publicFarm")}`, (f.x0 + f.w / 2) * TILE, (f.y0 - 0.45) * TILE, { size: 12, border: "#59d17a" });
+  for (const b of BUILDINGS) {
+    pill(ctx, `${b.id === "gameMarket" ? "🏪" : "🧺"} ${t(`place.${b.id}`)}`, (b.x + b.w / 2) * TILE, (b.y - 0.35) * TILE, { size: 12, border: "#f5c518" });
+  }
+  for (const l of LAND_META) {
+    if (l.x0 > x1 + 1 || l.x0 + LAND_SIZE < x0 - 1 || l.y0 > y1 + 1 || l.y0 + LAND_SIZE < y0 - 1) continue;
+    const owner = S.lands[l.id];
+    const text = owner ? `👑 ${owner.ownerName}` : `🏷️ ${fmtNum(l.price)} PP`;
+    pill(ctx, text, (l.x0 + LAND_SIZE / 2) * TILE, (l.y0 - 0.4) * TILE, {
+      size: 10, border: owner ? (owner.owner === S.uid ? "#f5c518" : "#d9534f") : null
+    });
+  }
+  for (const o of g.others) pill(ctx, o.p.name || "?", o.p.dx * TILE, o.p.dy * TILE - 46, { size: 10 });
+  pill(ctx, S.profile?.username || "", g.me.x * TILE, g.me.y * TILE - 46, { size: 11, border: "#f5c518" });
+}

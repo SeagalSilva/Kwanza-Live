@@ -1,0 +1,98 @@
+/* Base: variables, reset, shared components */
+:root {
+  --bg: #0e1712;
+  --panel: rgba(16, 28, 21, .94);
+  --panel-2: #1a2e22;
+  --line: #2d4b3a;
+  --txt: #eef5ef;
+  --mut: #9db5a4;
+  --red: #cc092f;
+  --gold: #f5c518;
+  --ok: #59d17a;
+  --bad: #ff6b6b;
+  --radius: 14px;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+
+html, body {
+  height: 100%; overflow: hidden; background: var(--bg); color: var(--txt);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-user-select: none; user-select: none; touch-action: manipulation;
+}
+input, select { -webkit-user-select: text; user-select: text; }
+
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+button:disabled { opacity: .4; cursor: not-allowed; }
+
+h1 { font-size: 22px; margin-bottom: 14px; }
+h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--mut); margin: 16px 0 6px; }
+label { display: block; font-size: 13px; color: var(--mut); margin: 12px 0 5px; }
+.muted { color: var(--mut); font-size: 14px; padding: 8px 0; }
+.small-note { font-size: 12px; }
+.center { text-align: center; }
+
+input, select {
+  width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: #0c1510; color: var(--txt); font-size: 16px;
+}
+input:focus, select:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 16px; border-radius: 12px; font-weight: 700; background: var(--red); color: #fff;
+  transition: transform .08s, filter .15s;
+}
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn:hover:not(:disabled) { filter: brightness(1.1); }
+.btn.gold { background: var(--gold); color: #1b1500; }
+.btn.alt { background: var(--panel-2); border: 1px solid var(--line); }
+.btn.big { width: 100%; padding: 14px; font-size: 16px; }
+.btn.small { padding: 7px 11px; font-size: 13px; border-radius: 10px; }
+
+.round {
+  width: 44px; height: 44px; border-radius: 50%; font-size: 20px; line-height: 1;
+  background: var(--panel); border: 1px solid var(--line); display: grid; place-items: center;
+}
+.round:active { transform: scale(.94); }
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 20px;
+  padding: 22px; width: min(440px, 100%); box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+}
+
+/* Currency icons */
+.ico { font-style: normal; }
+.coin {
+  display: inline-block; width: 16px; height: 16px; border-radius: 50%;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .25), 0 0 0 1px rgba(0, 0, 0, .35); vertical-align: -3px;
+}
+.coin.bronze { background: radial-gradient(circle at 35% 30%, #f0b78a, #9a5a2a); }
+.coin.silver { background: radial-gradient(circle at 35% 30%, #fff, #a9b2bd); }
+.coin.gold   { background: radial-gradient(circle at 35% 30%, #ffe680, #d49a00); }
+.money { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; white-space: nowrap; }
+
+/* Language / logout buttons */
+.topbar {
+  position: fixed; top: calc(10px + var(--safe-t)); right: 10px; z-index: 80; display: flex; gap: 8px;
+}
+.topbar .round { width: 40px; height: 40px; font-size: 14px; font-weight: 800; }
+#logoutBtn { font-size: 18px; }
+
+/* Toasts */
+#toast-root {
+  position: fixed; left: 50%; top: calc(64px + var(--safe-t)); transform: translateX(-50%);
+  z-index: 120; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none;
+  width: min(92vw, 460px);
+}
+.toast {
+  background: rgba(10, 18, 14, .95); border: 1px solid var(--line); border-radius: 12px;
+  padding: 10px 14px; font-size: 14px; text-align: center; animation: pop .2s ease-out;
+}
+.toast.good { border-color: var(--ok); }
+.toast.bad { border-color: var(--bad); }
+.toast.out { opacity: 0; transition: opacity .3s; }
+@keyframes pop { from { transform: translateY(-8px); opacity: 0; } }
