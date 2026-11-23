@@ -3,14 +3,58 @@
   "nextMsgId": 2,
   "workstationUsers": {
     "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1": {
-      "cycleId": 997440,
+      "cycleId": 997483,
       "depositedPP": 0,
       "readyToClaimBronze": 0,
       "history": [],
       "pendingTx": {},
       "pendingClaim": null,
       "dailyReadyToClaimBronze": 0,
-      "dailyHistory": []
+      "dailyHistory": [],
+      "name": "SeagalSilva",
+      "firstDepositedAt": 0
+    },
+    "test_u1": {
+      "cycleId": 997483,
+      "depositedPP": 0,
+      "readyToClaimBronze": 1,
+      "history": [
+        {
+          "cycleId": 997482,
+          "depositedPP": 15,
+          "bronzeEarned": 1,
+          "completedAt": 1795470124355
+        }
+      ],
+      "pendingTx": {},
+      "pendingClaim": null,
+      "dailyReadyToClaimBronze": 0,
+      "pendingDailyClaim": null,
+      "dailyHistory": [],
+      "name": "Alice",
+      "firstDepositedAt": 0,
+      "updatedAt": 1795468116718
+    },
+    "test_u2": {
+      "cycleId": 997483,
+      "depositedPP": 0,
+      "readyToClaimBronze": 2,
+      "history": [
+        {
+          "cycleId": 997482,
+          "depositedPP": 40,
+          "bronzeEarned": 2,
+          "completedAt": 1795470124355
+        }
+      ],
+      "pendingTx": {},
+      "pendingClaim": null,
+      "dailyReadyToClaimBronze": 0,
+      "pendingDailyClaim": null,
+      "dailyHistory": [],
+      "name": "Bob",
+      "firstDepositedAt": 0,
+      "updatedAt": 1795468116726
     }
   },
   "govState": {
@@ -31,6 +75,96 @@
     ],
     "playerCities": {},
     "cityDecrees": {},
+    "cityMaps": {
+      "kwanza_central": {
+        "width": 48,
+        "height": 40,
+        "publicFarm": {
+          "x0": 12,
+          "y0": 12
+        },
+        "buildings": {
+          "workstation": {
+            "x": 6,
+            "y": 12
+          },
+          "government": {
+            "x": 18,
+            "y": 4
+          },
+          "gameMarket": {
+            "x": 27,
+            "y": 12
+          },
+          "bazaar": {
+            "x": 34,
+            "y": 12
+          },
+          "casino": {
+            "x": 30,
+            "y": 4
+          },
+          "mines": {
+            "x": 6,
+            "y": 4
+          },
+          "postOffice": {
+            "x": 38,
+            "y": 4
+          },
+          "dungeon": {
+            "x": 42,
+            "y": 12
+          }
+        },
+        "lands": {},
+        "customLands": []
+      },
+      "lubizi": {
+        "width": 48,
+        "height": 40,
+        "publicFarm": {
+          "x0": 12,
+          "y0": 12
+        },
+        "buildings": {
+          "workstation": {
+            "x": 6,
+            "y": 12
+          },
+          "government": {
+            "x": 18,
+            "y": 4
+          },
+          "gameMarket": {
+            "x": 27,
+            "y": 12
+          },
+          "bazaar": {
+            "x": 34,
+            "y": 12
+          },
+          "casino": {
+            "x": 30,
+            "y": 4
+          },
+          "mines": {
+            "x": 6,
+            "y": 4
+          },
+          "postOffice": {
+            "x": 38,
+            "y": 4
+          },
+          "dungeon": {
+            "x": 42,
+            "y": 12
+          }
+        },
+        "lands": {},
+        "customLands": []
+      }
+    },
     "mapConfig": {
       "width": 48,
       "height": 40,
@@ -58,9 +192,22 @@
         "casino": {
           "x": 30,
           "y": 4
+        },
+        "mines": {
+          "x": 6,
+          "y": 4
+        },
+        "postOffice": {
+          "x": 38,
+          "y": 4
+        },
+        "dungeon": {
+          "x": 42,
+          "y": 12
         }
       },
-      "lands": {}
+      "lands": {},
+      "customLands": []
     }
   },
   "landOperations": {
@@ -105,9 +252,21 @@
         "players": {
           "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1": {
             "name": "SeagalSilva",
-            "points": 8,
+            "points": 912,
             "firstEarnedAt": 1795393245922,
-            "updatedAt": 1795393245922
+            "updatedAt": 1795468116835
+          },
+          "test_u1": {
+            "name": "Alice",
+            "points": 76,
+            "firstEarnedAt": 1795468116704,
+            "updatedAt": 1795468116711
+          },
+          "test_u2": {
+            "name": "Bob",
+            "points": 45,
+            "firstEarnedAt": 1795468116741,
+            "updatedAt": 1795468116741
           }
         }
       }
@@ -214,5 +373,171 @@
         "at": 1795394718027
       }
     ]
+  },
+  "mines": {
+    "rocks": {
+      "rock_1": {
+        "id": "rock_1",
+        "tier": "common",
+        "hp": 0,
+        "maxHp": 2,
+        "x": 15,
+        "y": 10,
+        "respawnAt": 1795468151737
+      },
+      "rock_2": {
+        "id": "rock_2",
+        "tier": "rare",
+        "hp": 0,
+        "maxHp": 2,
+        "x": 22,
+        "y": 3,
+        "respawnAt": 1795468151741
+      },
+      "rock_3": {
+        "id": "rock_3",
+        "tier": "rare",
+        "hp": 0,
+        "maxHp": 2,
+        "x": 13,
+        "y": 4,
+        "respawnAt": 1795468149226
+      },
+      "rock_4": {
+        "id": "rock_4",
+        "tier": "uncommon",
+        "hp": 2,
+        "maxHp": 2,
+        "x": 22,
+        "y": 8,
+        "respawnAt": 0
+      },
+      "rock_5": {
+        "id": "rock_5",
+        "tier": "common",
+        "hp": 3,
+        "maxHp": 3,
+        "x": 16,
+        "y": 9,
+        "respawnAt": 0
+      },
+      "rock_6": {
+        "id": "rock_6",
+        "tier": "rare",
+        "hp": 0,
+        "maxHp": 5,
+        "x": 16,
+        "y": 3,
+        "respawnAt": 1795468151835
+      },
+      "rock_7": {
+        "id": "rock_7",
+        "tier": "uncommon",
+        "hp": 4,
+        "maxHp": 4,
+        "x": 5,
+        "y": 11,
+        "respawnAt": 0
+      },
+      "rock_8": {
+        "id": "rock_8",
+        "tier": "uncommon",
+        "hp": 4,
+        "maxHp": 4,
+        "x": 9,
+        "y": 6,
+        "respawnAt": 0
+      },
+      "rock_9": {
+        "id": "rock_9",
+        "tier": "uncommon",
+        "hp": 4,
+        "maxHp": 4,
+        "x": 7,
+        "y": 7,
+        "respawnAt": 0
+      },
+      "rock_10": {
+        "id": "rock_10",
+        "tier": "common",
+        "hp": 3,
+        "maxHp": 3,
+        "x": 15,
+        "y": 9,
+        "respawnAt": 0
+      },
+      "rock_11": {
+        "id": "rock_11",
+        "tier": "common",
+        "hp": 2,
+        "maxHp": 2,
+        "x": 15,
+        "y": 7,
+        "respawnAt": 0
+      },
+      "rock_12": {
+        "id": "rock_12",
+        "tier": "rare",
+        "hp": 0,
+        "maxHp": 2,
+        "x": 13,
+        "y": 6,
+        "respawnAt": 1795468147737
+      },
+      "rock_13": {
+        "id": "rock_13",
+        "tier": "uncommon",
+        "hp": 4,
+        "maxHp": 4,
+        "x": 7,
+        "y": 10,
+        "respawnAt": 0
+      },
+      "rock_14": {
+        "id": "rock_14",
+        "tier": "common",
+        "hp": 2,
+        "maxHp": 2,
+        "x": 3,
+        "y": 5,
+        "respawnAt": 0
+      }
+    }
+  },
+  "adExemptions": {},
+  "userMail": {
+    "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1": [
+      {
+        "id": "welcome_CNp6ZR4tjnaoTz8lSr93YQ89Jsj1",
+        "type": "system",
+        "sender": "Correios Centrais",
+        "senderIcon": "📮",
+        "subject": "Bem-vindo ao Correio de Kwanza!",
+        "body": "Aqui recebes a tua correspondência oficial, avisos importantes e todas as recompensas acumuladas de turnos no Posto de Trabalho (30 min) ou participações na Pool Diária. Mesmo que fiques muito tempo sem jogar, os teus prémios nunca se perdem e ficam guardados aqui com segurança!",
+        "reward": {
+          "bronze": 5
+        },
+        "claimed": true,
+        "read": true,
+        "createdAt": 1795465567067,
+        "claimedAt": 1795465665789
+      }
+    ]
+  },
+  "dungeonUsers": {
+    "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1": {
+      "uid": "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1",
+      "name": "Jogador",
+      "highestFloorByPhase": {
+        "forest_entrance": 1
+      },
+      "clearsByPhase": {
+        "forest_entrance": 0
+      },
+      "totalKills": 0,
+      "totalChests": 0,
+      "activeRun": null,
+      "updatedAt": 1795470280993
+    }
   }
 }

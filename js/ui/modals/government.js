@@ -35,8 +35,10 @@ export function openGovernment() {
       const isPresident = !!pres && pres.uid === S.uid;
       const candidates = cachedState.candidates || [];
       const cities = cachedState.cities || [{ id: "kwanza_central", name: "Kwanza Central" }];
-      const currentCityId = (cachedState.playerCities && cachedState.playerCities[S.uid]) || S.currentCity || "kwanza_central";
-      const currentCityObj = cities.find((c) => c.id === currentCityId) || cities[0];
+      const rawCityId = (cachedState.playerCities && cachedState.playerCities[S.uid]) || S.currentCity || cities[0]?.id || "kwanza_central";
+      const currentCityObj = cities.find((c) => c.id === rawCityId) || cities[0];
+      const currentCityId = currentCityObj?.id || rawCityId;
+      const activeCityMap = (cachedState.cityMaps && cachedState.cityMaps[currentCityId]) || cachedState.mapConfig || {};
       const decree = (cachedState.cityDecrees && cachedState.cityDecrees[currentCityId]) || null;
 
       body.innerHTML = `
@@ -96,12 +98,13 @@ export function openGovernment() {
             <div style="background: rgba(245, 197, 24, 0.08); border: 1px solid var(--gold); border-radius: 14px; padding: 14px; display: grid; gap: 10px;">
               <h3 style="color: var(--gold); margin: 0; font-size: 14px;">🛡️ ${esc(t("gov.adminPanel"))}</h3>
               <p class="muted" style="font-size: 12px; margin: 0;">${esc(t("gov.adminDesc"))}</p>
+              <div style="font-size: 12px; color: var(--gold); font-weight: 700;">🏙️ ${esc(t("gov.editingCityLabel", { city: currentCityObj?.name || currentCityId }))}</div>
 
               <div style="display: grid; gap: 6px; border-top: 1px solid rgba(255,255,255,.1); padding-top: 8px;">
                 <label style="font-size: 12px; margin: 0;">${esc(t("gov.mapSizeLabel"))}</label>
                 <div style="display: flex; gap: 8px;">
-                  <input id="admin-map-w" type="number" min="20" max="200" placeholder="Width" value="${cachedState.mapConfig?.width || 48}" style="width: 50%;" />
-                  <input id="admin-map-h" type="number" min="20" max="200" placeholder="Height" value="${cachedState.mapConfig?.height || 40}" style="width: 50%;" />
+                  <input id="admin-map-w" type="number" min="20" max="200" placeholder="Width" value="${activeCityMap.width || 48}" style="width: 50%;" />
+                  <input id="admin-map-h" type="number" min="20" max="200" placeholder="Height" value="${activeCityMap.height || 40}" style="width: 50%;" />
                 </div>
                 <button id="admin-update-size" class="btn alt small" type="button">${esc(t("gov.btnUpdateSize"))}</button>
               </div>
@@ -190,7 +193,7 @@ export function openGovernment() {
             toast(t("msg.badPrice"), "bad");
             return;
           }
-          const res = await adminUpdateMap({ width, height });
+          const res = await adminUpdateMap({ cityId: currentCityId, width, height });
           if (res) {
             cachedState = await getGovernmentState();
             api.repaint();
@@ -212,7 +215,7 @@ export function openGovernment() {
             toast(t("msg.badPrice"), "bad");
             return;
           }
-          const res = await adminAddLand({ id, x0, y0, priceGold: 10 });
+          const res = await adminAddLand({ id, x0, y0, priceGold: 10 }, currentCityId);
           if (res) {
             cachedState = await getGovernmentState();
             api.repaint();

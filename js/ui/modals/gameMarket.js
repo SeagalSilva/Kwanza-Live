@@ -80,13 +80,20 @@ export function openGameMarket() {
         };
       }
 
-      body.onclick = (e) => {
+      body.onclick = async (e) => {
         const tabBtn = e.target.closest("[data-tab]");
         if (tabBtn) { tab = tabBtn.dataset.tab; api.repaint(); return; }
         const b = e.target.closest("[data-buy]");
-        if (b && !b.disabled) { buySeeds(b.dataset.buy, +b.dataset.n); return; }
+        if (b && !b.disabled) {
+          b.disabled = true;
+          try { await buySeeds(b.dataset.buy, +b.dataset.n); } finally { b.disabled = false; }
+          return;
+        }
         const s = e.target.closest("[data-sell]");
-        if (s) sellCrops(s.dataset.sell, s.dataset.n === "all" ? Infinity : +s.dataset.n);
+        if (s && !s.disabled) {
+          s.disabled = true;
+          try { await sellCrops(s.dataset.sell, s.dataset.n === "all" ? Infinity : +s.dataset.n); } finally { s.disabled = false; }
+        }
       };
     }
   });

@@ -19,22 +19,44 @@ export function isAdmin() {
 
 export function applyServerMapIfChanged(state) {
   if (!state) return;
+  const cities = Array.isArray(state.cities) && state.cities.length > 0 ? state.cities : null;
+  let targetCityId =
+    (S.uid && state.playerCities && state.playerCities[S.uid]) ||
+    state.cityId ||
+    state.activeCityId ||
+    S.currentCity ||
+    (cities && cities[0]?.id) ||
+    "kwanza_central";
+
+  if (cities && !cities.some((c) => c.id === targetCityId)) {
+    targetCityId = cities[0].id;
+  }
+  S.currentCity = targetCityId;
+
+  const activeMap = (state.cityMaps && state.cityMaps[targetCityId]) || state.mapConfig || null;
+  const activeCustomLands =
+    (activeMap && Array.isArray(activeMap.customLands) ? activeMap.customLands : null) ||
+    state.customLands ||
+    [];
+
   const hash = JSON.stringify({
-    mapConfig: state.mapConfig || null,
-    customLands: state.customLands || []
+    cityId: targetCityId,
+    mapConfig: activeMap,
+    customLands: activeCustomLands
   });
   if (hash !== lastMapHash) {
     lastMapHash = hash;
-    applyMapConfig(state.mapConfig, state.customLands);
-  }
-  if (S.uid && state.playerCities && state.playerCities[S.uid]) {
-    S.currentCity = state.playerCities[S.uid];
+    applyMapConfig(activeMap, activeCustomLands);
   }
 }
 
 export async function getGovernmentState() {
   try {
-    const res = await fetch("/api/government/state");
+    const params = new URLSearchParams();
+    if (S.uid) params.set("uid", S.uid);
+    if (S.currentCity) params.set("cityId", S.currentCity);
+    const qs = params.toString();
+    const res = await fetch(`/api/government/state${qs ? `?${qs}` : ""}`);
     if (!res.ok) throw new Error("HTTP error " + res.status);
     const data = await res.json();
     applyServerMapIfChanged(data);
@@ -51,6 +73,7 @@ export async function getGovernmentState() {
       ],
       playerCities: {},
       cityDecrees: {},
+      cityMaps: {},
       customLands: [],
       mapConfig: null
     };
@@ -122,6 +145,7 @@ export async function chooseCity(cityId) {
     if (!res.ok) throw new Error("City change failed");
     const data = await res.json();
     S.currentCity = data.cityId;
+    applyServerMapIfChanged(data);
     emit("save");
     toast(t("gov.cityChanged"), "good");
     return data;
@@ -147,7 +171,7 @@ export async function issuePresidentDecree(cityId, title, message) {
   }
 }
 
-export async function adminAddLand(landData) {
+export async function adminAddLand(landData, cityId = S.currentCity) {
   if (!isAdmin()) {
     toast(t("gov.adminOnly"), "bad");
     return false;
@@ -156,7 +180,12 @@ export async function adminAddLand(landData) {
     const res = await fetch("/api/government/admin/add-land", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ adminEmail: S.user.email, landData })
+      body: JSON.stringify({
+        adminEmail: S.user.email,
+        cityId: cityId || S.currentCity,
+        uid: S.uid,
+        landData
+      })
     });
     if (!res.ok) throw new Error("Admin action failed");
     const data = await res.json();
@@ -178,7 +207,12 @@ export async function adminUpdateMap(payload) {
     const res = await fetch("/api/government/admin/update-map", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ adminEmail: S.user.email, ...payload })
+      body: JSON.stringify({
+        adminEmail: S.user.email,
+        cityId: payload?.cityId || S.currentCity,
+        uid: S.uid,
+        ...payload
+      })
     });
     if (!res.ok) throw new Error("Admin map update failed");
     const data = await res.json();
@@ -237,7 +271,10 @@ export async function adminDeleteCity(cityId) {
     const data = await res.json();
     if (S.uid && data.playerCities && data.playerCities[S.uid]) {
       S.currentCity = data.playerCities[S.uid];
+    } else if (S.currentCity === cityId && Array.isArray(data.cities) && data.cities[0]?.id) {
+      S.currentCity = data.cities[0].id;
     }
+    applyServerMapIfChanged(data);
     toast(t("gov.cityDeleted"), "good");
     return data;
   } catch (err) {

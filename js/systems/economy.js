@@ -142,12 +142,16 @@ export async function sellCrops(cropId, qty) {
       body: JSON.stringify({ uid: S.uid, cropId, qty, ownedQty: owned })
     });
     const valData = await valRes.json();
-    if (!valRes.ok || !valData.allowed) {
+    if (!valRes.ok || !valData.allowed || !valData.txId) {
       toast(t("msg.notEnough"), "bad");
       return false;
     }
-    sellTxId = valData.txId || null;
-  } catch (_) {}
+    sellTxId = valData.txId;
+  } catch (err) {
+    console.error("[economy validate-sell]", err);
+    toast(t("msg.error"), "bad");
+    return false;
+  }
 
   const gain = CROPS[cropId].sell * qty;
   const ok = await commit({
@@ -155,12 +159,20 @@ export async function sellCrops(cropId, qty) {
     [savePath(S.uid, "wallet/pp")]: increment(gain)
   });
   if (ok) {
-    if (sellTxId) {
-      fetch("/api/economy/confirm-sell-crops", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uid: S.uid, name: S.profile?.username || "Jogador", txId: sellTxId })
-      }).catch(() => {});
+    const confirmPayload = JSON.stringify({
+      uid: S.uid,
+      name: S.profile?.username || "Jogador",
+      txId: sellTxId
+    });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch("/api/economy/confirm-sell-crops", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: confirmPayload
+        });
+        if (res.ok) break;
+      } catch (_) {}
     }
     toast(t("msg.soldCrops", { n: qty, crop: t(`crop.${cropId}`), gain }), "good");
   }

@@ -143,4 +143,93 @@ router.post("/free-seed/claim", (req, res) => {
   });
 });
 
+const AD_EXEMPTION_COST_GOLD = 30;
+const AD_EXEMPTION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days (1 month)
+
+// Validate and process ad exemption purchase (30 gold coins for 1 month)
+router.post("/ad-exemption/buy", (req, res) => {
+  const { uid, goldBalance } = req.body || {};
+  if (!uid) return res.status(400).json({ allowed: false, error: "UID required" });
+  const bal = Math.floor(Number(goldBalance));
+  if (isNaN(bal) || bal < AD_EXEMPTION_COST_GOLD) {
+    return res.status(400).json({ allowed: false, error: "Insufficient gold coins", cost: AD_EXEMPTION_COST_GOLD });
+  }
+
+  if (!dbState.adExemptions) dbState.adExemptions = {};
+  const current = dbState.adExemptions[uid] || {};
+  const prevExemptUntil = Number(current.exemptUntil) || 0;
+  const now = Date.now();
+  const baseTime = (prevExemptUntil > now) ? prevExemptUntil : now;
+  const newExemptUntil = baseTime + AD_EXEMPTION_DURATION_MS;
+
+  dbState.adExemptions[uid] = {
+    uid: String(uid),
+    exemptUntil: newExemptUntil,
+    updatedAt: now
+  };
+  saveDb();
+
+  res.json({
+    allowed: true,
+    costGold: AD_EXEMPTION_COST_GOLD,
+    prevExemptUntil,
+    exemptUntil: newExemptUntil,
+    durationMs: AD_EXEMPTION_DURATION_MS
+  });
+});
+
+router.post("/ad-exemption/rollback", (req, res) => {
+  const { uid, prevExemptUntil } = req.body || {};
+  if (!uid) return res.status(400).json({ error: "UID required" });
+  if (!dbState.adExemptions) dbState.adExemptions = {};
+  const prev = Number(prevExemptUntil) || 0;
+  if (prev > 0) {
+    dbState.adExemptions[uid] = {
+      uid: String(uid),
+      exemptUntil: prev,
+      updatedAt: Date.now()
+    };
+  } else {
+    delete dbState.adExemptions[uid];
+  }
+  saveDb();
+  res.json({ success: true, exemptUntil: prev });
+});
+
+router.get("/ad-exemption/status/:uid", (req, res) => {
+  const uid = String(req.params.uid || "");
+  const entry = dbState.adExemptions?.[uid];
+  const now = Date.now();
+  const exemptUntil = entry?.exemptUntil || 0;
+  res.json({
+    isExempt: exemptUntil > now,
+    exemptUntil,
+    remainingMs: Math.max(0, exemptUntil - now)
+  });
+});
+
+router.post("/ad-exemption/sync", (req, res) => {
+  const { uid, exemptUntil } = req.body || {};
+  if (!uid) return res.status(400).json({ error: "UID required" });
+  const clientUntil = Number(exemptUntil) || 0;
+  if (!dbState.adExemptions) dbState.adExemptions = {};
+  const current = dbState.adExemptions[uid]?.exemptUntil || 0;
+
+  const bestUntil = Math.max(current, clientUntil);
+  if (bestUntil > current) {
+    dbState.adExemptions[uid] = {
+      uid: String(uid),
+      exemptUntil: bestUntil,
+      updatedAt: Date.now()
+    };
+    saveDb();
+  }
+  const now = Date.now();
+  res.json({
+    isExempt: bestUntil > now,
+    exemptUntil: bestUntil,
+    remainingMs: Math.max(0, bestUntil - now)
+  });
+});
+
 export default router;

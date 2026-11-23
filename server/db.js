@@ -12,7 +12,45 @@ export function isAdminEmail(email) {
   return typeof email === "string" && email.trim().toLowerCase() === ADMIN_EMAIL;
 }
 
+export function createDefaultCityMap(base = null, fallbackCustomLands = []) {
+  const defBuildings = {
+    workstation: { x: 6, y: 12 },
+    government: { x: 18, y: 4 },
+    gameMarket: { x: 27, y: 12 },
+    bazaar: { x: 34, y: 12 },
+    casino: { x: 30, y: 4 },
+    mines: { x: 6, y: 4 },
+    postOffice: { x: 38, y: 4 },
+    dungeon: { x: 42, y: 12 }
+  };
+  const src = base && typeof base === "object" ? base : {};
+  return {
+    width: Math.max(20, Math.min(200, Number(src.width) || 48)),
+    height: Math.max(20, Math.min(200, Number(src.height) || 40)),
+    publicFarm: src.publicFarm && typeof src.publicFarm === "object"
+      ? { x0: Number(src.publicFarm.x0 ?? 12), y0: Number(src.publicFarm.y0 ?? 12) }
+      : { x0: 12, y0: 12 },
+    buildings: {
+      ...defBuildings,
+      ...(src.buildings && typeof src.buildings === "object" ? JSON.parse(JSON.stringify(src.buildings)) : {})
+    },
+    lands: src.lands && typeof src.lands === "object" ? JSON.parse(JSON.stringify(src.lands)) : {},
+    customLands: Array.isArray(src.customLands)
+      ? JSON.parse(JSON.stringify(src.customLands))
+      : JSON.parse(JSON.stringify(fallbackCustomLands || []))
+  };
+}
+
 function createDefaultData() {
+  const defaultCities = [
+    { id: "kwanza_central", name: "Kwanza Central" },
+    { id: "nova_luanda", name: "Nova Luanda" },
+    { id: "benguela_sul", name: "Benguela Sul" }
+  ];
+  const cityMaps = {};
+  for (const c of defaultCities) {
+    cityMaps[c.id] = createDefaultCityMap();
+  }
   return {
     chatMessages: [],
     nextMsgId: 1,
@@ -22,26 +60,11 @@ function createDefaultData() {
       candidates: [],
       votedUids: [],
       customLands: [],
-      cities: [
-        { id: "kwanza_central", name: "Kwanza Central" },
-        { id: "nova_luanda", name: "Nova Luanda" },
-        { id: "benguela_sul", name: "Benguela Sul" }
-      ],
+      cities: defaultCities,
       playerCities: {},
       cityDecrees: {},
-      mapConfig: {
-        width: 48,
-        height: 40,
-        publicFarm: { x0: 12, y0: 12 },
-        buildings: {
-          workstation: { x: 6, y: 12 },
-          government: { x: 18, y: 4 },
-          gameMarket: { x: 27, y: 12 },
-          bazaar: { x: 34, y: 12 },
-          casino: { x: 30, y: 4 }
-        },
-        lands: {}
-      }
+      cityMaps,
+      mapConfig: createDefaultCityMap()
     },
     landOperations: {},
     freeSeedVisits: {},
@@ -56,7 +79,14 @@ function createDefaultData() {
       pendingSpins: {},
       pendingPayouts: {},
       recentWins: []
-    }
+    },
+    mines: {
+      rocks: {}
+    },
+    adExemptions: {},
+    userMail: {},
+    dungeonUsers: {},
+    dungeonDrops: []
   };
 }
 
@@ -79,6 +109,21 @@ function mergeDefaults(loaded) {
 
   const gov = loaded.govState && typeof loaded.govState === "object" ? loaded.govState : {};
   const mapCfg = gov.mapConfig && typeof gov.mapConfig === "object" ? gov.mapConfig : {};
+  const legacyCustomLands = Array.isArray(gov.customLands) ? gov.customLands : [];
+  const cities = Array.isArray(gov.cities) && gov.cities.length > 0 ? gov.cities : def.govState.cities;
+  const normalizedLegacyMap = createDefaultCityMap(mapCfg, legacyCustomLands);
+
+  const loadedCityMaps = gov.cityMaps && typeof gov.cityMaps === "object" ? gov.cityMaps : {};
+  const cityMaps = {};
+  for (const c of cities) {
+    if (!c || !c.id) continue;
+    if (loadedCityMaps[c.id] && typeof loadedCityMaps[c.id] === "object") {
+      cityMaps[c.id] = createDefaultCityMap(loadedCityMaps[c.id], legacyCustomLands);
+    } else {
+      cityMaps[c.id] = createDefaultCityMap(normalizedLegacyMap, legacyCustomLands);
+    }
+  }
+
   const dp = loaded.dailyPool && typeof loaded.dailyPool === "object" ? loaded.dailyPool : {};
   const cas = loaded.casino && typeof loaded.casino === "object" ? loaded.casino : {};
 
@@ -90,20 +135,12 @@ function mergeDefaults(loaded) {
       president: gov.president || null,
       candidates: Array.isArray(gov.candidates) ? gov.candidates : [],
       votedUids: Array.isArray(gov.votedUids) ? gov.votedUids : [],
-      customLands: Array.isArray(gov.customLands) ? gov.customLands : [],
-      cities: Array.isArray(gov.cities) && gov.cities.length > 0 ? gov.cities : def.govState.cities,
+      customLands: legacyCustomLands,
+      cities,
       playerCities: gov.playerCities && typeof gov.playerCities === "object" ? gov.playerCities : {},
       cityDecrees: gov.cityDecrees && typeof gov.cityDecrees === "object" ? gov.cityDecrees : {},
-      mapConfig: {
-        width: Number(mapCfg.width) || def.govState.mapConfig.width,
-        height: Number(mapCfg.height) || def.govState.mapConfig.height,
-        publicFarm: mapCfg.publicFarm || def.govState.mapConfig.publicFarm,
-        buildings: {
-          ...def.govState.mapConfig.buildings,
-          ...(mapCfg.buildings || {})
-        },
-        lands: mapCfg.lands && typeof mapCfg.lands === "object" ? mapCfg.lands : {}
-      }
+      cityMaps,
+      mapConfig: normalizedLegacyMap
     },
     landOperations: loaded.landOperations && typeof loaded.landOperations === "object" ? loaded.landOperations : {},
     freeSeedVisits: loaded.freeSeedVisits && typeof loaded.freeSeedVisits === "object" ? loaded.freeSeedVisits : {},
@@ -118,7 +155,12 @@ function mergeDefaults(loaded) {
       pendingSpins: cas.pendingSpins && typeof cas.pendingSpins === "object" ? cas.pendingSpins : {},
       pendingPayouts: cas.pendingPayouts && typeof cas.pendingPayouts === "object" ? cas.pendingPayouts : {},
       recentWins: Array.isArray(cas.recentWins) ? cas.recentWins : []
-    }
+    },
+    mines: loaded.mines && typeof loaded.mines === "object" ? loaded.mines : { rocks: {} },
+    adExemptions: loaded.adExemptions && typeof loaded.adExemptions === "object" ? loaded.adExemptions : {},
+    userMail: loaded.userMail && typeof loaded.userMail === "object" ? loaded.userMail : {},
+    dungeonUsers: loaded.dungeonUsers && typeof loaded.dungeonUsers === "object" ? loaded.dungeonUsers : {},
+    dungeonDrops: Array.isArray(loaded.dungeonDrops) ? loaded.dungeonDrops : []
   };
 }
 

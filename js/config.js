@@ -45,3 +45,10 @@ export const MAX_LISTING_PRICE = 1_000_000;
 export const MAX_PLAYER_LISTINGS = 5;
 export const LISTING_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+// Mandatory ad config & VIP exemption (5-10 minutes interval, 30 gold for 1 month)
+export const AD_MIN_INTERVAL_MS = 5 * 60 * 1000;
+export const AD_MAX_INTERVAL_MS = 10 * 60 * 1000;
+export const AD_REQUIRED_STAY_MS = 5000;
+export const AD_EXEMPTION_COST_GOLD = 30;
+export const AD_EXEMPTION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
+

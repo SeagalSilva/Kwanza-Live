@@ -6,10 +6,28 @@ import { increment } from "../firebase.js";
 import { commit, savePath } from "./db.js";
 import { toast } from "../ui/toast.js";
 import { t } from "../i18n.js";
+import { fetchInbox } from "./mail.js";
+
+function msUntilNextUtcDayLocal() {
+  const now = new Date();
+  return Math.max(1000, Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0) - now.getTime());
+}
+
+const emptyShiftPool = () => ({
+  cycleId: Math.floor(Date.now() / (30 * 60 * 1000)),
+  cycleDurationMs: 30 * 60 * 1000,
+  cycleRemainingMs: (30 * 60 * 1000) - (Date.now() % (30 * 60 * 1000)),
+  participantsCount: 0,
+  totalDepositedPP: 0,
+  myRank: null,
+  myDepositedPP: 0,
+  myEstimatedBronze: 0,
+  leaderboard: []
+});
 
 const emptyDailyPool = () => ({
   utcDate: new Date().toISOString().slice(0, 10),
-  nextResetMs: 0,
+  nextResetMs: msUntilNextUtcDayLocal(),
   participantsCount: 0,
   topCount: 0,
   ruleTier: "under11",
@@ -25,34 +43,39 @@ const emptyDailyPool = () => ({
 });
 
 export async function getWorkstationStatus() {
+  const shiftFallback = emptyShiftPool();
   if (!S.uid) {
     return {
-      cycleId: 0,
-      cycleRemainingMs: 30 * 60 * 1000,
+      cycleId: shiftFallback.cycleId,
+      cycleRemainingMs: shiftFallback.cycleRemainingMs,
       cycleDurationMs: 30 * 60 * 1000,
       depositedPP: 0,
       estimatedBronze: 0,
       readyToClaimBronze: 0,
       ratePercent: 5,
       history: [],
+      shiftPool: shiftFallback,
       dailyPool: emptyDailyPool()
     };
   }
   try {
-    const res = await fetch(`/api/workstation/status?uid=${encodeURIComponent(S.uid)}`);
+    const params = new URLSearchParams({ uid: S.uid });
+    if (S.profile?.username) params.set("name", S.profile.username);
+    const res = await fetch(`/api/workstation/status?${params.toString()}`);
     if (!res.ok) throw new Error("HTTP error " + res.status);
     return await res.json();
   } catch (err) {
     console.warn("[workstation]", err);
     return {
-      cycleId: 0,
-      cycleRemainingMs: 30 * 60 * 1000,
+      cycleId: shiftFallback.cycleId,
+      cycleRemainingMs: shiftFallback.cycleRemainingMs,
       cycleDurationMs: 30 * 60 * 1000,
       depositedPP: 0,
       estimatedBronze: 0,
       readyToClaimBronze: 0,
       ratePercent: 5,
       history: [],
+      shiftPool: shiftFallback,
       dailyPool: emptyDailyPool()
     };
   }
@@ -69,13 +92,15 @@ export async function depositWorkstationPP(amount) {
     return false;
   }
 
+  const playerName = S.profile?.username || "Jogador";
+
   // Step 1: Ask server if this deposit action is allowed
   let txId = null;
   try {
     const valRes = await fetch("/api/workstation/validate-deposit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uid: S.uid, amount: amt, clientBalancePP: bal("pp") })
+      body: JSON.stringify({ uid: S.uid, name: playerName, amount: amt, clientBalancePP: bal("pp") })
     });
     const valData = await valRes.json();
     if (!valRes.ok || !valData.allowed) {
@@ -100,7 +125,7 @@ export async function depositWorkstationPP(amount) {
     const res = await fetch("/api/workstation/deposit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uid: S.uid, amount: amt, txId })
+      body: JSON.stringify({ uid: S.uid, name: playerName, amount: amt, txId })
     });
     if (!res.ok) throw new Error("Server rejected deposit confirmation");
     const data = await res.json();
@@ -141,6 +166,7 @@ export async function claimWorkstationBronze() {
         body: JSON.stringify({ uid: S.uid, claimId: data.claimId })
       }).catch(() => {});
       toast(t("ws.claimSuccess", { n: claimed }), "good");
+      fetchInbox();
       return data;
     }
 
@@ -184,6 +210,7 @@ export async function claimDailyPoolBronze() {
         body: JSON.stringify({ uid: S.uid, claimId: data.claimId })
       }).catch(() => {});
       toast(t("ws.dailyClaimSuccess", { n: claimed }), "good");
+      fetchInbox();
       return data;
     }
 

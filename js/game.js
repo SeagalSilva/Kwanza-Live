@@ -5,7 +5,8 @@ import { $ } from "./utils.js";
 import { resize, render, screenToWorld } from "./world/renderer.js";
 import { me, resetMe, updateMe } from "./world/player.js";
 import { input, initInput, setInputActive } from "./world/input.js";
-import { computeFocus, focusLabel, perform, handleTap, tickPending } from "./world/interactions.js";
+import { computeFocus, focusLabel, perform, handleTap, tickPending, handleLeaveDungeon } from "./world/interactions.js";
+import { updateDungeon } from "./world/dungeonRoom.js";
 import { mapSize } from "./world/map.js";
 import { isMapEditMode, getDragState, startDrag, moveDrag, endDrag, exitMapEditMode } from "./world/editor.js";
 import { startPresence, stopPresence, publishPosition, isFresh } from "./systems/presence.js";
@@ -90,6 +91,7 @@ function loop(ts) {
 
   updateMe(dt, input);
   tickPending();
+  if (S.room === "dungeon") updateDungeon(dt, me, handleLeaveDungeon);
 
   focus = computeFocus();
   setInteractLabel(focusLabel(focus));

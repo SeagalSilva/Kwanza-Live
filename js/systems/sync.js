@@ -41,7 +41,12 @@ export function startSync(uid) {
           }
         }
         prevWallet = { ...nextWallet };
-        S.save = { wallet: nextWallet, inv: v.inv || {} };
+        S.save = {
+          wallet: nextWallet,
+          inv: v.inv || {},
+          energy: { current: 100, max: 100, lastRegen: Date.now(), ...(v.energy || {}) },
+          adExemptUntil: v.adExemptUntil || 0
+        };
         emit("save");
       }
       if (first) { first = false; resolve(!!v); }

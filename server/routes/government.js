@@ -1,43 +1,113 @@
 import { Router } from "express";
-import { dbState, saveDb, isAdminEmail } from "../db.js";
+import { dbState, saveDb, isAdminEmail, createDefaultCityMap } from "../db.js";
 
 const router = Router();
 
+function resolveValidCityId(preferredId, uid, preferPlayerCity = false) {
+  const cities = dbState.govState.cities || [];
+  const fallbackId = cities[0]?.id || "kwanza_central";
+  const playerCityId = uid ? dbState.govState.playerCities?.[String(uid)] : null;
+  const candidates = preferPlayerCity
+    ? [playerCityId, preferredId, fallbackId]
+    : [preferredId, playerCityId, fallbackId];
+
+  for (const cid of candidates) {
+    if (cid && cities.some((c) => c.id === cid)) return cid;
+  }
+  return fallbackId;
+}
+
+function ensureCityMap(cityId) {
+  if (!dbState.govState.cityMaps || typeof dbState.govState.cityMaps !== "object") {
+    dbState.govState.cityMaps = {};
+  }
+  const targetId = resolveValidCityId(cityId);
+  if (!dbState.govState.cityMaps[targetId]) {
+    dbState.govState.cityMaps[targetId] = createDefaultCityMap();
+  }
+  if (!dbState.govState.cityMaps[targetId].buildings || typeof dbState.govState.cityMaps[targetId].buildings !== "object") {
+    dbState.govState.cityMaps[targetId].buildings = createDefaultCityMap().buildings;
+  }
+  if (!dbState.govState.cityMaps[targetId].lands || typeof dbState.govState.cityMaps[targetId].lands !== "object") {
+    dbState.govState.cityMaps[targetId].lands = {};
+  }
+  if (!Array.isArray(dbState.govState.cityMaps[targetId].customLands)) {
+    dbState.govState.cityMaps[targetId].customLands = [];
+  }
+  return { cityId: targetId, cityMap: dbState.govState.cityMaps[targetId] };
+}
+
+function ensureAllCityMaps() {
+  for (const c of dbState.govState.cities || []) {
+    if (c && c.id) ensureCityMap(c.id);
+  }
+}
+
+function syncLegacyPrimaryMap(targetId, cityMap) {
+  const primaryId = dbState.govState.cities?.[0]?.id || "kwanza_central";
+  if (targetId === primaryId) {
+    dbState.govState.mapConfig = cityMap;
+    dbState.govState.customLands = cityMap.customLands || [];
+  }
+}
+
 router.get("/state", (req, res) => {
+  ensureAllCityMaps();
+  const activeCityId = resolveValidCityId(req.query?.cityId, req.query?.uid, true);
+  const { cityMap } = ensureCityMap(activeCityId);
   res.json({
     ...dbState.govState,
+    activeCityId,
+    mapConfig: cityMap,
+    customLands: cityMap.customLands || [],
     serverTimeUtc: Date.now()
   });
 });
 
 router.post("/admin/update-map", (req, res) => {
-  const { adminEmail, width, height, publicFarm, buildings, lands } = req.body || {};
+  const { adminEmail, cityId, uid, width, height, publicFarm, buildings, lands } = req.body || {};
   if (!isAdminEmail(adminEmail)) {
     return res.status(403).json({ error: "Unauthorized admin" });
   }
 
-  const cfg = dbState.govState.mapConfig;
-  if (width !== undefined) cfg.width = Math.max(20, Math.min(200, Math.round(Number(width))));
-  if (height !== undefined) cfg.height = Math.max(20, Math.min(200, Math.round(Number(height))));
+  const targetId = resolveValidCityId(cityId, uid, false);
+  const { cityMap: cfg } = ensureCityMap(targetId);
+
+  if (width !== undefined && Number.isFinite(Number(width))) {
+    cfg.width = Math.max(20, Math.min(200, Math.round(Number(width))));
+  }
+  if (height !== undefined && Number.isFinite(Number(height))) {
+    cfg.height = Math.max(20, Math.min(200, Math.round(Number(height))));
+  }
   if (publicFarm && typeof publicFarm === "object") {
-    cfg.publicFarm = {
-      x0: Math.max(2, Math.round(Number(publicFarm.x0))),
-      y0: Math.max(2, Math.round(Number(publicFarm.y0)))
-    };
+    const x0 = Number(publicFarm.x0);
+    const y0 = Number(publicFarm.y0);
+    if (Number.isFinite(x0) && Number.isFinite(y0)) {
+      cfg.publicFarm = {
+        x0: Math.max(2, Math.round(x0)),
+        y0: Math.max(2, Math.round(y0))
+      };
+    }
   }
   if (buildings && typeof buildings === "object") {
     for (const [id, pos] of Object.entries(buildings)) {
-      if (pos && typeof pos.x === "number" && typeof pos.y === "number") {
-        cfg.buildings[id] = { x: Math.max(2, Math.round(pos.x)), y: Math.max(2, Math.round(pos.y)) };
+      if (pos && Number.isFinite(Number(pos.x)) && Number.isFinite(Number(pos.y))) {
+        cfg.buildings[id] = {
+          x: Math.max(2, Math.round(Number(pos.x))),
+          y: Math.max(2, Math.round(Number(pos.y)))
+        };
       }
     }
   }
   if (lands && typeof lands === "object") {
     for (const [id, pos] of Object.entries(lands)) {
-      if (pos && typeof pos.x0 === "number" && typeof pos.y0 === "number") {
-        const cleanPos = { x0: Math.max(2, Math.round(pos.x0)), y0: Math.max(2, Math.round(pos.y0)) };
+      if (pos && Number.isFinite(Number(pos.x0)) && Number.isFinite(Number(pos.y0))) {
+        const cleanPos = {
+          x0: Math.max(2, Math.round(Number(pos.x0))),
+          y0: Math.max(2, Math.round(Number(pos.y0)))
+        };
         cfg.lands[id] = cleanPos;
-        const custom = dbState.govState.customLands.find((l) => l.id === id);
+        const custom = cfg.customLands.find((l) => l.id === id);
         if (custom) {
           custom.x0 = cleanPos.x0;
           custom.y0 = cleanPos.y0;
@@ -46,11 +116,16 @@ router.post("/admin/update-map", (req, res) => {
     }
   }
 
+  syncLegacyPrimaryMap(targetId, cfg);
   saveDb();
   res.json({
     success: true,
-    mapConfig: dbState.govState.mapConfig,
-    customLands: dbState.govState.customLands
+    cityId: targetId,
+    cities: dbState.govState.cities,
+    playerCities: dbState.govState.playerCities,
+    cityMaps: dbState.govState.cityMaps,
+    mapConfig: cfg,
+    customLands: cfg.customLands || []
   });
 });
 
@@ -103,12 +178,18 @@ router.post("/city", (req, res) => {
   if (!dbState.govState.cities.some((c) => c.id === cityId)) {
     return res.status(404).json({ error: "City not found" });
   }
-  dbState.govState.playerCities[String(uid)] = String(cityId);
+  const cleanCityId = String(cityId);
+  dbState.govState.playerCities[String(uid)] = cleanCityId;
+  const { cityMap } = ensureCityMap(cleanCityId);
   saveDb();
   res.json({
     success: true,
-    cityId: String(cityId),
-    playerCities: dbState.govState.playerCities
+    cityId: cleanCityId,
+    cities: dbState.govState.cities,
+    playerCities: dbState.govState.playerCities,
+    cityMaps: dbState.govState.cityMaps,
+    mapConfig: cityMap,
+    customLands: cityMap.customLands || []
   });
 });
 
@@ -126,9 +207,19 @@ router.post("/admin/city/create", (req, res) => {
   while (dbState.govState.cities.some((c) => c.id === id)) {
     id = `${slug}_${n++}`;
   }
-  dbState.govState.cities.push({ id, name: cleanName, createdAt: Date.now() });
+  const createdCity = { id, name: cleanName, createdAt: Date.now() };
+  dbState.govState.cities.push(createdCity);
+  if (!dbState.govState.cityMaps || typeof dbState.govState.cityMaps !== "object") {
+    dbState.govState.cityMaps = {};
+  }
+  dbState.govState.cityMaps[id] = createDefaultCityMap();
   saveDb();
-  res.json({ success: true, cities: dbState.govState.cities });
+  res.json({
+    success: true,
+    createdCity,
+    cities: dbState.govState.cities,
+    cityMaps: dbState.govState.cityMaps
+  });
 });
 
 router.post("/admin/city/rename", (req, res) => {
@@ -143,7 +234,11 @@ router.post("/admin/city/rename", (req, res) => {
   if (!city) return res.status(404).json({ error: "City not found" });
   city.name = cleanName;
   saveDb();
-  res.json({ success: true, cities: dbState.govState.cities });
+  res.json({
+    success: true,
+    cities: dbState.govState.cities,
+    cityMaps: dbState.govState.cityMaps
+  });
 });
 
 router.post("/admin/city/delete", (req, res) => {
@@ -159,16 +254,24 @@ router.post("/admin/city/delete", (req, res) => {
 
   dbState.govState.cities.splice(idx, 1);
   delete dbState.govState.cityDecrees[cityId];
+  if (dbState.govState.cityMaps) {
+    delete dbState.govState.cityMaps[cityId];
+  }
   const fallbackId = dbState.govState.cities[0].id;
   for (const [uid, cid] of Object.entries(dbState.govState.playerCities)) {
     if (cid === cityId) dbState.govState.playerCities[uid] = fallbackId;
   }
+  const { cityMap: fallbackMap } = ensureCityMap(fallbackId);
+  syncLegacyPrimaryMap(fallbackId, fallbackMap);
   saveDb();
   res.json({
     success: true,
     cities: dbState.govState.cities,
     playerCities: dbState.govState.playerCities,
-    cityDecrees: dbState.govState.cityDecrees
+    cityDecrees: dbState.govState.cityDecrees,
+    cityMaps: dbState.govState.cityMaps,
+    mapConfig: fallbackMap,
+    customLands: fallbackMap.customLands || []
   });
 });
 
@@ -196,7 +299,7 @@ router.post("/president/decree", (req, res) => {
 });
 
 router.post("/admin/add-land", (req, res) => {
-  const { adminEmail, landData } = req.body || {};
+  const { adminEmail, cityId, uid, landData } = req.body || {};
   if (!isAdminEmail(adminEmail)) {
     return res.status(403).json({ error: "Unauthorized admin" });
   }
@@ -204,28 +307,41 @@ router.post("/admin/add-land", (req, res) => {
     return res.status(400).json({ error: "Invalid land data" });
   }
 
-  const cleanId = String(landData.id).trim().slice(0, 12);
-  const x0 = Math.max(2, Math.round(Number(landData.x0)));
-  const y0 = Math.max(2, Math.round(Number(landData.y0)));
+  const targetId = resolveValidCityId(cityId, uid, false);
+  const { cityMap } = ensureCityMap(targetId);
 
-  const existing = dbState.govState.customLands.find((l) => l.id === cleanId);
+  const cleanId = String(landData.id).trim().slice(0, 12);
+  const rawX = Number(landData.x0);
+  const rawY = Number(landData.y0);
+  if (!Number.isFinite(rawX) || !Number.isFinite(rawY)) {
+    return res.status(400).json({ error: "Invalid coordinates" });
+  }
+  const x0 = Math.max(2, Math.round(rawX));
+  const y0 = Math.max(2, Math.round(rawY));
+
+  const existing = cityMap.customLands.find((l) => l.id === cleanId);
   if (existing) {
     existing.x0 = x0;
     existing.y0 = y0;
   } else {
-    dbState.govState.customLands.push({
+    cityMap.customLands.push({
       id: cleanId,
       x0,
       y0,
       priceGold: Number(landData.priceGold) || 10
     });
   }
-  dbState.govState.mapConfig.lands[cleanId] = { x0, y0 };
+  cityMap.lands[cleanId] = { x0, y0 };
+  syncLegacyPrimaryMap(targetId, cityMap);
   saveDb();
   res.json({
     success: true,
-    customLands: dbState.govState.customLands,
-    mapConfig: dbState.govState.mapConfig
+    cityId: targetId,
+    cities: dbState.govState.cities,
+    playerCities: dbState.govState.playerCities,
+    cityMaps: dbState.govState.cityMaps,
+    customLands: cityMap.customLands,
+    mapConfig: cityMap
   });
 });
 

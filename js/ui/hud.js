@@ -9,8 +9,11 @@ import { seedId } from "../data/items.js";
 import { sanitizeLook } from "../data/character.js";
 import { drawCharacter } from "../world/character.js";
 import { initAudio, isMuted, toggleMute, playCoin, playPoolPoints } from "../systems/audio.js";
+import { commit, savePath } from "../systems/db.js";
 import { openInventory } from "./modals/inventory.js";
 import { openWallet } from "./modals/wallet.js";
+import { openPostOffice } from "./modals/postOffice.js";
+import { getMailState } from "../systems/mail.js";
 import { initChatUI } from "./chat.js";
 
 let lastLabel = null;
@@ -126,6 +129,8 @@ export function initHud() {
   initAudio();
   $("#btn-inv").onclick = openInventory;
   $("#btn-wallet").onclick = openWallet;
+  const mailBtn = $("#btn-mail");
+  if (mailBtn) mailBtn.onclick = openPostOffice;
   $("#btn-interact").onclick = () => emit("interact");
 
   const soundBtn = $("#btn-sound");
@@ -158,6 +163,23 @@ export function initHud() {
   updateUtcClock();
   if (!utcTimer) utcTimer = setInterval(updateUtcClock, 1000);
 
+  setInterval(() => {
+    if (!S.uid || !S.save || !S.save.energy) return;
+    const en = S.save.energy;
+    if (en.current >= en.max) return;
+    const nowMs = Date.now();
+    const last = en.lastRegen || nowMs;
+    if (nowMs - last >= 30_000) {
+      en.current = Math.min(en.max, en.current + 1);
+      en.lastRegen = nowMs;
+      commit({
+        [savePath(S.uid, "energy/current")]: en.current,
+        [savePath(S.uid, "energy/lastRegen")]: en.lastRegen
+      }).catch(() => {});
+      refreshHud();
+    }
+  }, 5000);
+
   on("coinsReceived", (coins) => {
     const fromCasino = (S._casinoHudSuppressUntil || 0) > Date.now();
     if (!fromCasino) playCoin();
@@ -172,14 +194,27 @@ export function initHud() {
   on("lang", () => { refreshHud(); updateUtcClock(); });
   on("selected", refreshHud);
   on("selectSlot", (i) => selectSeed(CROP_IDS[i]));
+  on("mail", updateMailIndicator);
   refreshHud();
+  updateMailIndicator();
+}
+
+function updateMailIndicator(mailState = getMailState()) {
+  const dot = $("#mail-unread-dot");
+  if (!dot) return;
+  const count = mailState?.unreadCount || 0;
+  dot.hidden = count <= 0;
+  dot.textContent = count > 9 ? "9+" : (count > 0 ? String(count) : "");
 }
 
 export function refreshHud() {
   if (!S.profile) return;
   $("#hud-name").textContent = S.profile.username;
-  $("#hud-wallet").innerHTML = ALL_CURRENCIES.map((c) =>
-    `<span class="chip" title="${esc(t(`cur.${c}`))}">${curIcon(c)}<b>${fmtNum(bal(c))}</b></span>`).join("");
+  const en = S.save.energy || { current: 100, max: 100 };
+  $("#hud-wallet").innerHTML =
+    ALL_CURRENCIES.map((c) =>
+      `<span class="chip" title="${esc(t(`cur.${c}`))}">${curIcon(c)}<b>${fmtNum(bal(c))}</b></span>`).join("") +
+    `<span class="chip" title="${esc(t("mines.energyTitle"))}">⚡ <b>${en.current}/${en.max}</b></span>`;
 
   let availableCount = 0;
   document.querySelectorAll("#hotbar .slot").forEach((el) => {

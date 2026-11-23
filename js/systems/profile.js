@@ -16,7 +16,9 @@ export async function loadProfile(uid) {
 
 export const defaultSave = () => ({
   wallet: { pp: START.pp, bronze: START.bronze || 0, silver: 0, gold: 0 },
-  inv: { ...START.inv }
+  inv: { ...START.inv },
+  energy: { current: 100, max: 100, lastRegen: Date.now() },
+  adExemptUntil: 0
 });
 
 /** Reserve the username, store the profile and give the starter kit — atomically. */

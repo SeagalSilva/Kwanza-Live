@@ -9,6 +9,8 @@ import { cropState, tileData } from "../systems/farming.js";
 import { sanitizeLook } from "../data/character.js";
 import { drawCharacter } from "./character.js";
 import { renderCasinoRoom } from "./casinoRoom.js";
+import { renderMinesRoom } from "./minesRoom.js";
+import { renderDungeonRoom } from "./dungeonRoom.js";
 import { drawLandFloor, drawLandFenceDecor, pushLandEntities } from "./landVisuals.js";
 import { hash2, colorFromString } from "../utils.js";
 
@@ -215,7 +217,134 @@ function drawCrop(ctx, tx, ty, scope, key, time) {
 }
 
 // ── buildings & trees ────────────────────────────────────────
+function drawMineBuilding(ctx, b) {
+  const x = b.x * TILE, y = b.y * TILE, w = b.w * TILE, h = b.h * TILE;
+  ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(x + 4, y + h - 4, w, 8);
+
+  // Rocky mountain mound background
+  ctx.fillStyle = "#3e4a54";
+  ctx.beginPath();
+  ctx.moveTo(x, y + h);
+  ctx.lineTo(x + 8, y + TILE * 0.8);
+  ctx.lineTo(x + w / 2, y);
+  ctx.lineTo(x + w - 8, y + TILE * 0.8);
+  ctx.lineTo(x + w, y + h);
+  ctx.closePath();
+  ctx.fill();
+
+  // Stone face texture
+  ctx.fillStyle = "#2c3e50";
+  ctx.fillRect(x + 6, y + TILE * 1.2, w - 12, h - TILE * 1.2);
+
+  // Wooden tunnel support frame (Timber archway)
+  ctx.fillStyle = "#5c3a21";
+  ctx.fillRect(x + TILE * 1.2, y + TILE * 1.2, 10, h - TILE * 1.2);
+  ctx.fillRect(x + w - TILE * 1.2 - 10, y + TILE * 1.2, 10, h - TILE * 1.2);
+  ctx.fillRect(x + TILE * 1.0, y + TILE * 1.0, w - TILE * 2.0, 12);
+
+  // Dark cavern entrance (tunnel opening)
+  ctx.fillStyle = "#11161d";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x + TILE * 1.6, y + TILE * 1.6, w - TILE * 3.2, h - TILE * 1.6, [20, 20, 0, 0]);
+  else ctx.rect(x + TILE * 1.6, y + TILE * 1.6, w - TILE * 3.2, h - TILE * 1.6);
+  ctx.fill();
+
+  // Glowing ore crystals on rock face (cyan & purple)
+  ctx.fillStyle = "#00e5ff";
+  ctx.beginPath();
+  ctx.arc(x + 16, y + TILE * 2.2, 3, 0, Math.PI * 2);
+  ctx.arc(x + w - 18, y + TILE * 2.5, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#d500f9";
+  ctx.beginPath();
+  ctx.arc(x + 24, y + TILE * 3.2, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Wooden sign "MINAS" above entrance
+  ctx.fillStyle = "#4a2e17";
+  ctx.fillRect(x + w / 2 - 34, y + 6, 68, 18);
+  ctx.strokeStyle = "#f5c518";
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(x + w / 2 - 34, y + 6, 68, 18);
+  ctx.fillStyle = "#f5c518";
+  ctx.font = `700 9px system-ui`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("⛏️ MINAS", x + w / 2, y + 15);
+}
+
+function drawDungeonBuilding(ctx, b) {
+  const x = b.x * TILE, y = b.y * TILE, w = b.w * TILE, h = b.h * TILE;
+  ctx.fillStyle = "rgba(0,0,0,.28)";
+  ctx.fillRect(x + 4, y + h - 4, w, 8);
+
+  // Ancient mossy stone sanctuary facade
+  ctx.fillStyle = "#2d3b32";
+  ctx.beginPath();
+  ctx.moveTo(x + 2, y + h);
+  ctx.lineTo(x + 6, y + TILE * 0.7);
+  ctx.lineTo(x + w / 2, y);
+  ctx.lineTo(x + w - 6, y + TILE * 0.7);
+  ctx.lineTo(x + w - 2, y + h);
+  ctx.closePath();
+  ctx.fill();
+
+  // Stone block inner frame
+  ctx.fillStyle = "#3c4e42";
+  ctx.fillRect(x + 10, y + TILE * 1.15, w - 20, h - TILE * 1.15);
+
+  // Overgrown forest vines & moss on top
+  ctx.fillStyle = "#2e7d32";
+  ctx.beginPath();
+  ctx.arc(x + 16, y + TILE * 1.1, 14, 0, Math.PI * 2);
+  ctx.arc(x + w / 2, y + TILE * 0.85, 18, 0, Math.PI * 2);
+  ctx.arc(x + w - 16, y + TILE * 1.1, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#43a047";
+  ctx.beginPath();
+  ctx.arc(x + w / 2 - 8, y + TILE * 0.8, 10, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Glowing emerald dungeon portal archway
+  ctx.fillStyle = "#0b1710";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x + TILE * 1.1, y + TILE * 1.65, w - TILE * 2.2, h - TILE * 1.65, [18, 18, 0, 0]);
+  else ctx.rect(x + TILE * 1.1, y + TILE * 1.65, w - TILE * 2.2, h - TILE * 1.65);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(89, 209, 122, 0.35)";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x + TILE * 1.25, y + TILE * 1.85, w - TILE * 2.5, h - TILE * 1.85, [14, 14, 0, 0]);
+  else ctx.rect(x + TILE * 1.25, y + TILE * 1.85, w - TILE * 2.5, h - TILE * 1.85);
+  ctx.fill();
+
+  // Twin flickering torches beside doorway
+  ctx.fillStyle = "#ff9800";
+  ctx.beginPath();
+  ctx.arc(x + TILE * 0.75, y + TILE * 2.6, 4, 0, Math.PI * 2);
+  ctx.arc(x + w - TILE * 0.75, y + TILE * 2.6, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Crest sign
+  ctx.fillStyle = "#1a2b20";
+  ctx.fillRect(x + w / 2 - 34, y + 8, 68, 17);
+  ctx.strokeStyle = "#59d17a";
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(x + w / 2 - 34, y + 8, 68, 17);
+  ctx.fillStyle = "#d4ffdf";
+  ctx.font = "700 9px system-ui";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("🌲 DUNGEON", x + w / 2, y + 16.5);
+}
+
 function drawBuilding(ctx, b) {
+  if (b.id === "mines") {
+    return drawMineBuilding(ctx, b);
+  }
+  if (b.id === "dungeon") {
+    return drawDungeonBuilding(ctx, b);
+  }
   const x = b.x * TILE, y = b.y * TILE, w = b.w * TILE, h = b.h * TILE;
   ctx.fillStyle = "rgba(0,0,0,.2)"; ctx.fillRect(x + 4, y + h - 4, w, 8);
   ctx.fillStyle = b.body; ctx.fillRect(x, y + TILE * 1.1, w, h - TILE * 1.1);
@@ -238,6 +367,20 @@ function drawBuilding(ctx, b) {
     if (Math.abs(i + 0.5 - b.w / 2) < 1.2) continue;
     ctx.fillRect(x + i * TILE + 7, y + TILE * 2.3, TILE - 14, 16);
   }
+
+  // Post Office specific mailbox pillar on front wall
+  if (b.id === "postOffice") {
+    const pbx = x + 10, pby = y + h - 24;
+    // Red mailbox pillar
+    ctx.fillStyle = "#c0392b";
+    ctx.fillRect(pbx, pby, 16, 24);
+    // Gold mail slot
+    ctx.fillStyle = "#f39c12";
+    ctx.fillRect(pbx + 3, pby + 4, 10, 3);
+    // Envelope icon
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(pbx + 4, pby + 11, 8, 6);
+  }
 }
 
 function drawTree(ctx, tx, ty) {
@@ -257,6 +400,18 @@ function drawTree(ctx, tx, ty) {
 export function render(ctx, g) {
   if (S.room === "casino") {
     return renderCasinoRoom(ctx, view, g, {
+      sanitizeLook,
+      myLook: sanitizeLook(S.profile?.look)
+    });
+  }
+  if (S.room === "mines") {
+    return renderMinesRoom(ctx, view, g, {
+      sanitizeLook,
+      myLook: sanitizeLook(S.profile?.look)
+    });
+  }
+  if (S.room === "dungeon") {
+    return renderDungeonRoom(ctx, view, g, {
       sanitizeLook,
       myLook: sanitizeLook(S.profile?.look)
     });
@@ -351,8 +506,8 @@ export function render(ctx, g) {
   const f = PUBLIC_FARM;
   pill(ctx, `🌾 ${t("place.publicFarm")}`, (f.x0 + f.w / 2) * TILE, (f.y0 - 0.45) * TILE, { size: 12, border: "#59d17a" });
   for (const b of BUILDINGS) {
-    const icon = b.id === "gameMarket" ? "🏪" : b.id === "bazaar" ? "🧺" : b.id === "government" ? "🏛️" : b.id === "casino" ? "🎰" : "🔨";
-    pill(ctx, `${icon} ${t(`place.${b.id}`)}`, (b.x + b.w / 2) * TILE, (b.y - 0.35) * TILE, { size: 12, border: "#f5c518" });
+    const icon = b.id === "gameMarket" ? "🏪" : b.id === "bazaar" ? "🧺" : b.id === "government" ? "🏛️" : b.id === "casino" ? "🎰" : b.id === "mines" ? "⛏️" : b.id === "postOffice" ? "📮" : b.id === "dungeon" ? "🌲" : "🔨";
+    pill(ctx, `${icon} ${t(`place.${b.id}`)}`, (b.x + b.w / 2) * TILE, (b.y - 0.35) * TILE, { size: 12, border: b.id === "dungeon" ? "#59d17a" : "#f5c518" });
   }
   for (const l of LAND_META) {
     if (l.x0 > x1 + 1 || l.x0 + LAND_SIZE < x0 - 1 || l.y0 > y1 + 1 || l.y0 + LAND_SIZE < y0 - 1) continue;

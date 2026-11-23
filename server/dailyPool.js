@@ -59,7 +59,7 @@ export function calculateDailyPoolDistribution(dayObj) {
 
   const participantsCount = list.length;
   const totalPoints = list.reduce((sum, p) => sum + p.points, 0);
-  const poolBronze = Math.floor(totalPoints * 0.04);
+  const poolBronze = totalPoints > 0 ? Math.max(1, Math.floor(totalPoints * 0.04)) : 0;
 
   if (participantsCount === 0) {
     return {
@@ -77,7 +77,7 @@ export function calculateDailyPoolDistribution(dayObj) {
       ...p,
       rank: idx + 1,
       inTop: true,
-      rewardBronze: Math.floor(p.points * 0.04)
+      rewardBronze: p.points > 0 ? Math.max(1, Math.floor(p.points * 0.04)) : 0
     }));
     return {
       participantsCount,
@@ -206,12 +206,17 @@ export function recordDailyPoints(uid, name, points, nowMs = Date.now()) {
   if (!day.players) day.players = {};
 
   const prev = day.players[uid];
+  const fallbackName = dbState.workstationUsers?.[uid]?.name;
+  const cleanName = String(name || prev?.name || fallbackName || "Jogador").slice(0, 32);
   day.players[uid] = {
-    name: String(name || prev?.name || "Jogador").slice(0, 32),
+    name: cleanName,
     points: (prev?.points || 0) + amt,
     firstEarnedAt: prev?.firstEarnedAt || nowMs,
     updatedAt: nowMs
   };
+  if (dbState.workstationUsers?.[uid] && cleanName !== "Jogador") {
+    dbState.workstationUsers[uid].name = cleanName;
+  }
 
   saveDb();
   return day.players[uid];

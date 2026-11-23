@@ -169,3 +169,62 @@ export function playMegaWin() {
   tone(1567.98, 1567.98, 0.45, { type: "triangle", gain: 0.11, delay: 0.45 });
 }
 
+/** Metallic pickaxe hit sound. */
+export function playMineHit() {
+  tone(880, 520, 0.05, { type: "square", gain: 0.12 });
+  tone(1760, 1046, 0.04, { type: "triangle", gain: 0.1, delay: 0.02 });
+}
+
+/** Deep stone cracking / rock break sound. */
+export function playRockBreak() {
+  tone(140, 70, 0.16, { type: "sawtooth", gain: 0.16 });
+  tone(90, 40, 0.2, { type: "triangle", gain: 0.14, delay: 0.04 });
+}
+
+/** Sparkling chime when discovering precious gems and ores. */
+export function playPreciousGem() {
+  tone(783.99, 783.99, 0.08, { type: "sine", gain: 0.15, delay: 0 });
+  tone(1174.66, 1174.66, 0.1, { type: "triangle", gain: 0.15, delay: 0.06 });
+  tone(1567.98, 1567.98, 0.22, { type: "sine", gain: 0.16, delay: 0.13 });
+}
+
+/** Crisp sword slash / critical strike sound inside Dungeon. */
+export function playSwordHit(isCrit = false) {
+  tone(isCrit ? 620 : 440, 140, 0.09, { type: "sawtooth", gain: isCrit ? 0.15 : 0.11, delay: 0 });
+  if (isCrit) {
+    tone(1046.5, 1318.5, 0.11, { type: "triangle", gain: 0.14, delay: 0.03 });
+  }
+}
+
+/** Low impact thud when monster counterattacks the player. */
+export function playPlayerHit() {
+  tone(160, 85, 0.1, { type: "triangle", gain: 0.13, delay: 0 });
+}
+
+/** Monster defeated burst. */
+export function playEnemyDefeat() {
+  tone(330, 220, 0.08, { type: "sawtooth", gain: 0.1, delay: 0 });
+  tone(523.25, 659.25, 0.14, { type: "triangle", gain: 0.13, delay: 0.05 });
+}
+
+/** Refreshing Forest Spring healing chime. */
+export function playDungeonHeal() {
+  tone(440, 587.33, 0.12, { type: "sine", gain: 0.13, delay: 0 });
+  tone(587.33, 880, 0.18, { type: "sine", gain: 0.13, delay: 0.08 });
+}
+
+/** Treasure chest opened sparkle inside Dungeon. */
+export function playDungeonChest() {
+  const notes = [523.25, 659.25, 783.99, 1046.5];
+  notes.forEach((f, i) => {
+    tone(f, f * 1.01, 0.14, { type: "triangle", gain: 0.14, delay: i * 0.055 });
+  });
+}
+
+/** Victory fanfare upon clearing Boss Floor 10 / Phase 1. */
+export function playDungeonVictory() {
+  const chord = [523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98];
+  chord.forEach((f, i) => {
+    tone(f, f, 0.22, { type: i % 2 ? "sine" : "triangle", gain: 0.14, delay: i * 0.065 });
+  });
+}

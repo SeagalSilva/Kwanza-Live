@@ -15,7 +15,10 @@ const BASE_BUILDINGS = [
   { id: "government",  x: 18, y: 4,  w: 6, h: 4, roof: "#8e44ad", body: "#f3e5f5" },
   { id: "gameMarket",  x: 27, y: 12, w: 5, h: 4, roof: "#cc092f", body: "#ead9b0" },
   { id: "bazaar",      x: 34, y: 12, w: 7, h: 4, roof: "#2e86de", body: "#efe2c2" },
-  { id: "casino",      x: 30, y: 4,  w: 6, h: 4, roof: "#b81d3a", body: "#2c1e2e" }
+  { id: "casino",      x: 30, y: 4,  w: 6, h: 4, roof: "#b81d3a", body: "#2c1e2e" },
+  { id: "mines",       x: 6,  y: 4,  w: 6, h: 4, roof: "#4f5d65", body: "#bfc9ca" },
+  { id: "postOffice",  x: 38, y: 4,  w: 6, h: 4, roof: "#2980b9", body: "#fef9e7" },
+  { id: "dungeon",     x: 42, y: 12, w: 4, h: 4, roof: "#1e5631", body: "#354a3a" }
 ];
 
 export const BUILDINGS = [];

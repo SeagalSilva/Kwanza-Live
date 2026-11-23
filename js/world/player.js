@@ -3,6 +3,8 @@ import { SPEED } from "../config.js";
 import { S } from "../state.js";
 import { SPAWN, isBlockedStatic, gateIndex } from "./map.js";
 import { isCasinoBlocked } from "./casinoRoom.js";
+import { isMinesBlocked } from "./minesRoom.js";
+import { isDungeonBlocked } from "./dungeonRoom.js";
 
 export const DIRV = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 
@@ -27,7 +29,13 @@ function gateClosed(tx, ty) {
 }
 
 export const blocked = (tx, ty) =>
-  S.room === "casino" ? isCasinoBlocked(tx, ty) : (isBlockedStatic(tx, ty) || gateClosed(tx, ty));
+  S.room === "casino"
+    ? isCasinoBlocked(tx, ty)
+    : S.room === "mines"
+      ? isMinesBlocked(tx, ty)
+      : S.room === "dungeon"
+        ? isDungeonBlocked(tx, ty)
+        : (isBlockedStatic(tx, ty) || gateClosed(tx, ty));
 
 function hits(px, py) {
   const r = 0.26, h = 0.18;

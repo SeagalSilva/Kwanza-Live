@@ -8,6 +8,9 @@ import governmentRoutes from "./server/routes/government.js";
 import economyRoutes from "./server/routes/economy.js";
 import landsRoutes from "./server/routes/lands.js";
 import casinoRoutes from "./server/routes/casino.js";
+import minesRoutes from "./server/routes/mines.js";
+import mailRoutes from "./server/routes/mail.js";
+import dungeonRoutes from "./server/routes/dungeon.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +27,9 @@ app.use("/api/government", governmentRoutes);
 app.use("/api/economy", economyRoutes);
 app.use("/api/lands", landsRoutes);
 app.use("/api/casino", casinoRoutes);
+app.use("/api/mines", minesRoutes);
+app.use("/api/mail", mailRoutes);
+app.use("/api/dungeon", dungeonRoutes);
 
 // Expose runtime Firebase configuration dynamically
 app.get("/api/config.js", (req, res) => {

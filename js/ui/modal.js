@@ -7,8 +7,9 @@ let current = null;
 
 export const isModalOpen = () => !!current;
 
-export function closeModal() {
+export function closeModal(force = false) {
   if (!current) return;
+  if (!current.closable && !force) return;
   const prev = current;
   current = null;
   prev.offs.forEach((off) => off());
@@ -20,22 +21,22 @@ export function closeModal() {
 }
 
 /**
- * openModal({ title: () => string, render(body, api), events: ['save','lang'], shouldRepaint(evt), onClose })
+ * openModal({ title: () => string, render(body, api), events: ['save','lang'], shouldRepaint(evt), onClose, closable })
  */
-export function openModal({ title, render, events = ["lang"], shouldRepaint = () => true, onClose = null }) {
-  closeModal();
+export function openModal({ title, render, events = ["lang"], shouldRepaint = () => true, onClose = null, closable = true }) {
+  closeModal(true);
   const root = document.createElement("div");
-  root.className = "modal-backdrop";
+  root.className = `modal-backdrop${closable ? "" : " unclosable"}`;
   root.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true">
-      <header><h2></h2><button class="x" type="button" aria-label="Close">✕</button></header>
+      <header><h2></h2><button class="x" type="button" aria-label="Close"${closable ? "" : ' style="display:none;"'}>✕</button></header>
       <div class="modal-body"></div>
     </div>`;
   document.getElementById("modal-root").appendChild(root);
 
   const h2 = root.querySelector("h2");
   const body = root.querySelector(".modal-body");
-  const api = { close: closeModal, repaint: () => paint() };
+  const api = { close: () => closeModal(true), repaint: () => paint() };
 
   function paint() {
     h2.innerHTML = esc(title());
@@ -46,11 +47,13 @@ export function openModal({ title, render, events = ["lang"], shouldRepaint = ()
     body.scrollTop = scroll;
   }
 
-  root.addEventListener("pointerdown", (e) => { if (e.target === root) closeModal(); });
-  root.querySelector(".x").onclick = closeModal;
+  root.addEventListener("pointerdown", (e) => { if (closable && e.target === root) closeModal(); });
+  if (closable) {
+    root.querySelector(".x").onclick = () => closeModal();
+  }
 
   const offs = events.map((evt) => on(evt, () => { if (shouldRepaint(evt)) paint(); }));
-  current = { root, offs, onClose };
+  current = { root, offs, onClose, closable };
   paint();
   emit("modal", true);
   return api;

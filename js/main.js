@@ -14,6 +14,8 @@ import { startOnboarding } from "./ui/onboarding.js";
 import { initHud } from "./ui/hud.js";
 import { toast } from "./ui/toast.js";
 import { startGame, stopGame } from "./game.js";
+import { startAdScheduler, stopAdScheduler, verifyAdExemptionOnLogin } from "./systems/ads.js";
+import { startMailSync, stopMailSync } from "./systems/mail.js";
 
 let hudReady = false;
 
@@ -24,6 +26,8 @@ initLogin();
 
 function teardown() {
   stopGame();
+  stopAdScheduler();
+  stopMailSync();
   stopSync();
   stopChatSync();
   stopMapSync();
@@ -34,8 +38,11 @@ async function enterGame() {
   await Promise.all([syncMapFromServer(), syncLandsFromServer()]);
   const hasSave = await startSync(S.uid);
   if (!hasSave) await ensureSave(S.uid);
+  await verifyAdExemptionOnLogin(S.uid);
   startChatSync();
   startMapSync();
+  startMailSync();
+  startAdScheduler();
   showScreen("game");
   if (!hudReady) { initHud(); hudReady = true; }
   startGame();
