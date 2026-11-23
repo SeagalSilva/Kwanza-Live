@@ -75,26 +75,28 @@ async function fetchNewMessages() {
     const res = await fetch(`/api/chat/messages?since=${lastSyncedTime}`);
     if (!res.ok) return;
     const data = await res.json();
-    const newMsgs = data.messages || [];
-    if (!newMsgs.length) return;
+    const cutoff = Date.now() - 10 * 60 * 1000;
+    
+    // Purge local messages older than 10 minutes
+    S.chat.messages = S.chat.messages.filter((m) => m.time >= cutoff);
+
+    const newMsgs = (data.messages || []).filter((m) => m.time >= cutoff);
+    if (!newMsgs.length && S.chat.messages.length === 0) return;
 
     let addedAny = false;
     for (const m of newMsgs) {
       if (m.time > lastSyncedTime) lastSyncedTime = m.time;
-      // If we don't already have this message ID
       const exists = S.chat.messages.some((x) => x.id === m.id || (x.uid === m.uid && Math.abs(x.time - m.time) < 1000 && x.text === m.text));
       if (!exists) {
         S.chat.messages.push(m);
         addedAny = true;
-        // Also trigger speech bubble if recent
         if (m.uid !== S.uid) {
           registerSpeechBubble(m.uid, m.text, m.time);
         }
       }
     }
 
-    if (addedAny) {
-      if (S.chat.messages.length > 80) S.chat.messages = S.chat.messages.slice(-80);
+    if (addedAny || S.chat.messages.length > 0) {
       emit("chat");
     }
   } catch (_) {}

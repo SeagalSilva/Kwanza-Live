@@ -18,9 +18,10 @@ export function clearInput() { input.up = input.down = input.left = input.right 
 
 const typing = (e) => /^(INPUT|SELECT|TEXTAREA)$/.test(e.target?.tagName || "");
 
-export function initInput(canvas, { onInteract, onTap }) {
+export function initInput(canvas, { onInteract, onTap, onPointerDown, onPointerMove, onPointerUp }) {
   if (bound) return;
   bound = true;
+  let dragging = false;
 
   window.addEventListener("keydown", (e) => {
     if (!active || typing(e)) return;
@@ -38,8 +39,32 @@ export function initInput(canvas, { onInteract, onTap }) {
   canvas.addEventListener("pointerdown", (e) => {
     if (!active || isModalOpen()) return;
     const r = canvas.getBoundingClientRect();
-    onTap(e.clientX - r.left, e.clientY - r.top);
+    const px = e.clientX - r.left, py = e.clientY - r.top;
+    if (onPointerDown && onPointerDown(px, py, e)) {
+      dragging = true;
+      try { canvas.setPointerCapture?.(e.pointerId); } catch (_) {}
+      return;
+    }
+    onTap(px, py);
   });
+
+  canvas.addEventListener("pointermove", (e) => {
+    if (!dragging || !active || !onPointerMove) return;
+    const r = canvas.getBoundingClientRect();
+    onPointerMove(e.clientX - r.left, e.clientY - r.top, e);
+  });
+
+  const stopDrag = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    try { canvas.releasePointerCapture?.(e.pointerId); } catch (_) {}
+    if (onPointerUp) {
+      const r = canvas.getBoundingClientRect();
+      onPointerUp(e.clientX - r.left, e.clientY - r.top, e);
+    }
+  };
+  canvas.addEventListener("pointerup", stopDrag);
+  canvas.addEventListener("pointercancel", stopDrag);
 
   document.querySelectorAll("#dpad [data-dir]").forEach((b) => {
     const dir = b.dataset.dir;

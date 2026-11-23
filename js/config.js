@@ -32,8 +32,16 @@ export const MAX_LANDS_PER_PLAYER = 3;
 // New players
 export const START = {
   pp: 100,
+  bronze: 25,
   inv: { seed_corn: 3 }
 };
 
+// Game Market free seed link
+export const FREE_SEED_LINK = "https://asiafilm.org/4/e05a39d8360ea9cb129d5b8799df08c9";
+export const FREE_SEED_STAY_MS = 5000;
+
 // Market limits
 export const MAX_LISTING_PRICE = 1_000_000;
+export const MAX_PLAYER_LISTINGS = 5;
+export const LISTING_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+

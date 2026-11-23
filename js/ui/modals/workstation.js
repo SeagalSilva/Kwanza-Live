@@ -2,48 +2,170 @@ import { S, bal } from "../../state.js";
 import { t } from "../../i18n.js";
 import { esc } from "../../utils.js";
 import { money } from "../../data/currencies.js";
-import { getWorkstationStatus, depositWorkstationPP, claimWorkstationBronze } from "../../systems/workstation.js";
+import {
+  getWorkstationStatus,
+  depositWorkstationPP,
+  claimWorkstationBronze,
+  claimDailyPoolBronze
+} from "../../systems/workstation.js";
 import { openModal } from "../modal.js";
 
 function formatMs(ms) {
   if (ms <= 0) return "00:00";
   const totalSec = Math.floor(ms / 1000);
-  const m = Math.floor(totalSec / 60);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
-  return `${m}m ${s < 10 ? "0" + s : s}s`;
+  const pad = (n) => (n < 10 ? "0" + n : String(n));
+  return h > 0 ? `${h}h ${pad(m)}m ${pad(s)}s` : `${m}m ${pad(s)}s`;
+}
+
+function rankBadge(rank) {
+  if (rank === 1) return "🥇 #1";
+  if (rank === 2) return "🥈 #2";
+  if (rank === 3) return "🥉 #3";
+  return `#${rank}`;
 }
 
 export function openWorkstation() {
   let timerInterval = null;
   let cachedStatus = null;
   let remainingLocalMs = 0;
+  let dailyResetLocalMs = 0;
   let lastFetchTime = Date.now();
+  let activeTab = "shift";
 
   openModal({
     title: () => `🔨 ${t("place.workstation")}`,
     events: ["save", "lang"],
-    async render(body, api) {
+    async render(body) {
       if (!cachedStatus) {
         body.innerHTML = `<div class="center muted" style="padding: 24px;">${esc(t("loading"))}</div>`;
         cachedStatus = await getWorkstationStatus();
-        remainingLocalMs = cachedStatus.cycleRemainingMs;
+        remainingLocalMs = cachedStatus.cycleRemainingMs || 0;
+        dailyResetLocalMs = cachedStatus.dailyPool?.nextResetMs || 0;
         lastFetchTime = Date.now();
       }
 
-      function updateView() {
+      async function refreshStatus() {
+        cachedStatus = await getWorkstationStatus();
+        remainingLocalMs = cachedStatus.cycleRemainingMs || 0;
+        dailyResetLocalMs = cachedStatus.dailyPool?.nextResetMs || 0;
+        lastFetchTime = Date.now();
+      }
+
+      function renderDailyTab() {
+        const dp = cachedStatus.dailyPool || {};
+        const dailyClaim = dp.dailyReadyToClaimBronze || 0;
+        const participants = dp.participantsCount || 0;
+        const topCount = dp.topCount || 0;
+        const ruleText =
+          dp.ruleTier === "top10pct"
+            ? t("ws.ruleTop10Pct", { top: topCount })
+            : dp.ruleTier === "top10"
+            ? t("ws.ruleTop10", { top: topCount })
+            : t("ws.ruleUnder11");
+
+        const myTierText = !dp.myRank
+          ? "—"
+          : dp.ruleTier === "under11"
+          ? t("ws.tierAll4")
+          : dp.myInTop
+          ? t("ws.tierTop", { top: topCount })
+          : t("ws.tierRest");
+
+        const lb = Array.isArray(dp.leaderboard) ? dp.leaderboard : [];
+        let lbRowsHtml = "";
+        let cutoffShown = false;
+        for (const row of lb) {
+          if (dp.ruleTier !== "under11" && !row.inTop && !cutoffShown) {
+            cutoffShown = true;
+            lbRowsHtml += `<div class="ws-lb-cutoff">${esc(t("ws.dailyCutoffLabel", { top: topCount }))}</div>`;
+          }
+          const isMe = row.uid === S.uid;
+          lbRowsHtml += `
+            <div class="ws-lb-row${isMe ? " me" : ""}">
+              <span class="ws-lb-rank">${rankBadge(row.rank)}</span>
+              <span class="ws-lb-name">${esc(row.name)}</span>
+              <span class="ws-lb-pts">${row.points} PP</span>
+              <span class="money">${money(row.estimatedBronze, "bronze")}</span>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="ws-stack">
+            <p class="muted" style="font-size: 12.5px; line-height: 1.45;">
+              ${esc(t("ws.dailyDesc"))}
+            </p>
+
+            ${dailyClaim > 0 ? `
+              <div class="ws-claim-box">
+                <strong style="color: var(--ok); display: block; font-size: 14px; margin-bottom: 4px;">
+                  🎉 ${esc(t("ws.dailyReadyTitle"))}
+                </strong>
+                <p style="font-size: 18px; margin: 6px 0;">${money(dailyClaim, "bronze")}</p>
+                <button id="ws-daily-claim-btn" class="btn gold big" type="button" style="margin-top: 6px;">
+                  ${esc(t("ws.btnClaimDaily"))}
+                </button>
+              </div>
+            ` : ""}
+
+            <div class="ws-rule-banner">⚖️ ${esc(ruleText)}</div>
+
+            <div class="ws-card">
+              <div class="ws-kv sep">
+                <span class="muted">📅 ${esc(t("ws.dailyReset"))}:</span>
+                <strong id="ws-daily-timer" style="color: var(--gold); font-variant-numeric: tabular-nums;">
+                  ${formatMs(dailyResetLocalMs)}
+                </strong>
+              </div>
+              <div class="ws-kv">
+                <span class="muted">👥 ${esc(t("ws.dailyParticipants"))}:</span>
+                <strong>${participants}</strong>
+              </div>
+              <div class="ws-kv sep">
+                <span class="muted">🏆 ${esc(t("ws.dailyPoolTotal"))}:</span>
+                <span class="money">${money(dp.poolBronze || 0, "bronze")}</span>
+              </div>
+              <div class="ws-kv">
+                <span class="muted">🌾 ${esc(t("ws.dailyMyPoints"))}:</span>
+                <span class="money">${money(dp.myPoints || 0, "pp")}</span>
+              </div>
+              <div class="ws-kv">
+                <span class="muted">📊 ${esc(t("ws.dailyMyRank"))}:</span>
+                <strong>${dp.myRank ? `#${dp.myRank} / ${participants}` : "—"} · ${esc(myTierText)}</strong>
+              </div>
+              <div class="ws-kv">
+                <span class="muted">🥉 ${esc(t("ws.dailyEstReward"))}:</span>
+                <span class="money">${money(dp.myEstimatedBronze || 0, "bronze")}</span>
+              </div>
+            </div>
+
+            <div class="ws-card">
+              <strong style="font-size: 13px;">🏅 ${esc(t("ws.dailyLeaderboard"))}</strong>
+              ${lb.length > 0
+                ? `<div class="ws-lb">${lbRowsHtml}</div>`
+                : `<p class="muted" style="font-size: 12px;">${esc(t("ws.dailyEmpty"))}</p>`}
+            </div>
+          </div>
+        `;
+      }
+
+      function renderShiftTab() {
         const myPP = bal("pp");
         const readyClaim = cachedStatus.readyToClaimBronze || 0;
         const deposited = cachedStatus.depositedPP || 0;
         const estBronze = Math.floor(deposited * 0.05);
 
-        body.innerHTML = `
-          <div style="display: flex; flex-direction: column; gap: 12px;">
+        return `
+          <div class="ws-stack">
             <p class="muted" style="font-size: 13px; line-height: 1.4; padding: 2px 0 0;">
               ${esc(t("ws.desc"))}
             </p>
 
             ${readyClaim > 0 ? `
-              <div style="background: rgba(89, 209, 122, 0.12); border: 1px solid var(--ok); border-radius: 12px; padding: 12px; text-align: center;">
+              <div class="ws-claim-box">
                 <strong style="color: var(--ok); display: block; font-size: 14px; margin-bottom: 4px;">
                   🎉 ${esc(t("ws.readyClaimTitle"))}
                 </strong>
@@ -54,31 +176,34 @@ export function openWorkstation() {
               </div>
             ` : ""}
 
-            <div style="background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,.06); padding-bottom: 6px;">
-                <span class="muted" style="font-size: 12px;">⏱️ ${esc(t("ws.shiftTimer"))}:</span>
+            <div class="ws-card">
+              <div class="ws-kv sep">
+                <span class="muted">🌐 ${esc(t("hud.utcNote"))}:</span>
+                <strong id="ws-utc" style="color: var(--txt); font-variant-numeric: tabular-nums;">
+                  ${new Date().toISOString().slice(11, 19)} UTC
+                </strong>
+              </div>
+              <div class="ws-kv sep">
+                <span class="muted">⏱️ ${esc(t("ws.shiftTimer"))}:</span>
                 <strong id="ws-timer" style="color: var(--gold); font-size: 15px; font-variant-numeric: tabular-nums;">
                   ${formatMs(remainingLocalMs)}
                 </strong>
               </div>
-
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span class="muted" style="font-size: 12px;">🌾 ${esc(t("ws.yourPP"))}:</span>
+              <div class="ws-kv">
+                <span class="muted">🌾 ${esc(t("ws.yourPP"))}:</span>
                 <span class="money">${money(myPP, "pp")}</span>
               </div>
-
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span class="muted" style="font-size: 12px;">📥 ${esc(t("ws.currentDeposited"))}:</span>
+              <div class="ws-kv">
+                <span class="muted">📥 ${esc(t("ws.currentDeposited"))}:</span>
                 <span class="money">${money(deposited, "pp")}</span>
               </div>
-
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span class="muted" style="font-size: 12px;">🥉 ${esc(t("ws.estReward"))}:</span>
+              <div class="ws-kv">
+                <span class="muted">🥉 ${esc(t("ws.estReward"))}:</span>
                 <span class="money">${money(estBronze, "bronze")}</span>
               </div>
             </div>
 
-            <div style="background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 10px;">
+            <div class="ws-card">
               <strong style="font-size: 14px;">${esc(t("ws.depositTitle"))}</strong>
               <div style="display: flex; gap: 8px;">
                 <input id="ws-deposit-input" type="number" min="1" max="${myPP}" placeholder="${esc(t("ws.amountPlaceholder"))}" style="flex: 1;" />
@@ -94,10 +219,37 @@ export function openWorkstation() {
             </div>
           </div>
         `;
+      }
+
+      function updateView() {
+        const myPP = bal("pp");
+        const shiftClaim = cachedStatus.readyToClaimBronze || 0;
+        const dailyClaim = cachedStatus.dailyPool?.dailyReadyToClaimBronze || 0;
+
+        body.innerHTML = `
+          <div class="tabs">
+            <button type="button" data-ws-tab="shift" class="${activeTab === "shift" ? "on" : ""}">
+              ${esc(t("ws.tabShift"))}${shiftClaim > 0 ? `<span class="ws-tab-badge">+${shiftClaim}</span>` : ""}
+            </button>
+            <button type="button" data-ws-tab="daily" class="${activeTab === "daily" ? "on" : ""}">
+              ${esc(t("ws.tabDaily"))}${dailyClaim > 0 ? `<span class="ws-tab-badge">+${dailyClaim}</span>` : ""}
+            </button>
+          </div>
+          ${activeTab === "daily" ? renderDailyTab() : renderShiftTab()}
+        `;
+
+        body.querySelectorAll("[data-ws-tab]").forEach((btn) => {
+          btn.onclick = async () => {
+            activeTab = btn.dataset.wsTab;
+            await refreshStatus();
+            updateView();
+          };
+        });
 
         const input = body.querySelector("#ws-deposit-input");
         const depositBtn = body.querySelector("#ws-deposit-btn");
         const claimBtn = body.querySelector("#ws-claim-btn");
+        const dailyClaimBtn = body.querySelector("#ws-daily-claim-btn");
 
         body.querySelectorAll("[data-pct]").forEach((b) => {
           b.onclick = () => {
@@ -114,9 +266,7 @@ export function openWorkstation() {
             const res = await depositWorkstationPP(val);
             depositBtn.disabled = false;
             if (res) {
-              cachedStatus = await getWorkstationStatus();
-              remainingLocalMs = cachedStatus.cycleRemainingMs;
-              lastFetchTime = Date.now();
+              await refreshStatus();
               updateView();
             }
           };
@@ -128,7 +278,19 @@ export function openWorkstation() {
             const res = await claimWorkstationBronze();
             claimBtn.disabled = false;
             if (res) {
-              cachedStatus = await getWorkstationStatus();
+              await refreshStatus();
+              updateView();
+            }
+          };
+        }
+
+        if (dailyClaimBtn) {
+          dailyClaimBtn.onclick = async () => {
+            dailyClaimBtn.disabled = true;
+            const res = await claimDailyPoolBronze();
+            dailyClaimBtn.disabled = false;
+            if (res) {
+              await refreshStatus();
               updateView();
             }
           };
@@ -139,19 +301,24 @@ export function openWorkstation() {
 
       if (timerInterval) clearInterval(timerInterval);
       timerInterval = setInterval(async () => {
-        const now = Date.now();
-        const delta = now - lastFetchTime;
-        lastFetchTime = now;
+        if (!body.isConnected) { clearInterval(timerInterval); timerInterval = null; return; }
+        const nowMs = Date.now();
+        const delta = nowMs - lastFetchTime;
+        lastFetchTime = nowMs;
         remainingLocalMs = Math.max(0, remainingLocalMs - delta);
+        dailyResetLocalMs = Math.max(0, dailyResetLocalMs - delta);
+
+        const utcEl = body.querySelector("#ws-utc");
+        if (utcEl) utcEl.textContent = `${new Date(nowMs).toISOString().slice(11, 19)} UTC`;
 
         const timerEl = body.querySelector("#ws-timer");
         if (timerEl) timerEl.textContent = formatMs(remainingLocalMs);
 
-        // If cycle elapsed, poll fresh status from server
-        if (remainingLocalMs <= 0) {
-          cachedStatus = await getWorkstationStatus();
-          remainingLocalMs = cachedStatus.cycleRemainingMs;
-          lastFetchTime = Date.now();
+        const dailyTimerEl = body.querySelector("#ws-daily-timer");
+        if (dailyTimerEl) dailyTimerEl.textContent = formatMs(dailyResetLocalMs);
+
+        if (remainingLocalMs <= 0 || dailyResetLocalMs <= 0) {
+          await refreshStatus();
           updateView();
         }
       }, 1000);

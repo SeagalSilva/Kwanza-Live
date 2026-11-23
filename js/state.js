@@ -12,9 +12,14 @@ export const S = {
   players: {},           // other online players
   farm: {},              // public farm tiles
   lands: {},             // owned lands { L1: {owner, ownerName} }
+  landOps: {},           // server-persisted land operations { L1: { mode, animals, stock, pendingEarnings } }
   landTiles: {},         // { L1: { "x_y": tile } }
   listings: {},          // player-market listings
-  offset: 0              // server time offset (ms)
+  offset: 0,             // server time offset (ms)
+  mapEditMode: false,    // admin drag-and-drop map editing active
+  currentCity: "kwanza_central",
+  room: "world",         // "world" | "casino"
+  casino: { machines: {}, roulette: { freeSpins: 0, lockedBet: 0 }, recentWins: [] }
 };
 
 /** Server-corrected current time (ms). */
@@ -30,5 +35,9 @@ export function selectSeed(cropId) {
 export function resetState() {
   S.uid = null; S.user = null; S.profile = null;
   S.save = blankSave();
-  S.players = {}; S.farm = {}; S.lands = {}; S.landTiles = {}; S.listings = {};
+  S.players = {}; S.farm = {}; S.lands = {}; S.landOps = {}; S.landTiles = {}; S.listings = {};
+  S.mapEditMode = false;
+  S.currentCity = "kwanza_central";
+  S.room = "world";
+  S.casino = { machines: {}, roulette: { freeSpins: 0, lockedBet: 0 }, recentWins: [] };
 }

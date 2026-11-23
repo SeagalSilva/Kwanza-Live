@@ -9,16 +9,20 @@ export const isModalOpen = () => !!current;
 
 export function closeModal() {
   if (!current) return;
-  current.offs.forEach((off) => off());
-  current.root.remove();
+  const prev = current;
   current = null;
+  prev.offs.forEach((off) => off());
+  prev.root.remove();
+  if (typeof prev.onClose === "function") {
+    try { prev.onClose(); } catch (_) {}
+  }
   emit("modal", false);
 }
 
 /**
- * openModal({ title: () => string, render(body, api), events: ['save','lang'], shouldRepaint(evt) })
+ * openModal({ title: () => string, render(body, api), events: ['save','lang'], shouldRepaint(evt), onClose })
  */
-export function openModal({ title, render, events = ["lang"], shouldRepaint = () => true }) {
+export function openModal({ title, render, events = ["lang"], shouldRepaint = () => true, onClose = null }) {
   closeModal();
   const root = document.createElement("div");
   root.className = "modal-backdrop";
@@ -46,7 +50,7 @@ export function openModal({ title, render, events = ["lang"], shouldRepaint = ()
   root.querySelector(".x").onclick = closeModal;
 
   const offs = events.map((evt) => on(evt, () => { if (shouldRepaint(evt)) paint(); }));
-  current = { root, offs };
+  current = { root, offs, onClose };
   paint();
   emit("modal", true);
   return api;

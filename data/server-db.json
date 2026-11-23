@@ -1,0 +1,218 @@
+{
+  "chatMessages": [],
+  "nextMsgId": 2,
+  "workstationUsers": {
+    "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1": {
+      "cycleId": 997440,
+      "depositedPP": 0,
+      "readyToClaimBronze": 0,
+      "history": [],
+      "pendingTx": {},
+      "pendingClaim": null,
+      "dailyReadyToClaimBronze": 0,
+      "dailyHistory": []
+    }
+  },
+  "govState": {
+    "president": null,
+    "candidates": [],
+    "votedUids": [],
+    "customLands": [],
+    "cities": [
+      {
+        "id": "kwanza_central",
+        "name": "Kwanza Central"
+      },
+      {
+        "id": "lubizi",
+        "name": "Lubizi",
+        "createdAt": 1795389538033
+      }
+    ],
+    "playerCities": {},
+    "cityDecrees": {},
+    "mapConfig": {
+      "width": 48,
+      "height": 40,
+      "publicFarm": {
+        "x0": 12,
+        "y0": 12
+      },
+      "buildings": {
+        "workstation": {
+          "x": 6,
+          "y": 12
+        },
+        "government": {
+          "x": 18,
+          "y": 4
+        },
+        "gameMarket": {
+          "x": 27,
+          "y": 12
+        },
+        "bazaar": {
+          "x": 34,
+          "y": 12
+        },
+        "casino": {
+          "x": 30,
+          "y": 4
+        }
+      },
+      "lands": {}
+    }
+  },
+  "landOperations": {
+    "L1": {
+      "owner": "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1",
+      "ownerName": "SeagalSilva",
+      "mode": "farm",
+      "animals": {},
+      "stock": {},
+      "luckPrice": 5,
+      "luckCurrency": "bronze",
+      "pendingEarnings": {
+        "bronze": 0,
+        "silver": 0,
+        "gold": 0
+      }
+    }
+  },
+  "freeSeedVisits": {
+    "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1": {
+      "startedAt": 0,
+      "claimedCount": 16,
+      "lastClaimedAt": 1795393438994
+    }
+  },
+  "dailyPool": {
+    "days": {
+      "2026-11-22": {
+        "settled": true,
+        "players": {},
+        "settledAt": 1795393228189,
+        "summary": {
+          "participantsCount": 0,
+          "totalPoints": 0,
+          "poolBronze": 0,
+          "topCount": 0,
+          "ruleTier": "under11"
+        }
+      },
+      "2026-11-23": {
+        "settled": false,
+        "players": {
+          "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1": {
+            "name": "SeagalSilva",
+            "points": 8,
+            "firstEarnedAt": 1795393245922,
+            "updatedAt": 1795393245922
+          }
+        }
+      }
+    },
+    "pendingSellTx": {}
+  },
+  "casino": {
+    "machines": {
+      "slot_10": {
+        "uid": "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1",
+        "name": "SeagalSilva",
+        "occupiedAt": 1795397521855
+      }
+    },
+    "rouletteSessions": {
+      "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1": {
+        "freeSpins": 0,
+        "lockedBet": 0
+      }
+    },
+    "slotSessions": {
+      "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1": {
+        "machineId": "slot_10",
+        "freeSpins": 0,
+        "lockedBet": 0,
+        "mode": null
+      }
+    },
+    "pendingSpins": {},
+    "pendingPayouts": {
+      "84e9bbe5-5870-4610-9911-3acd89d57079": {
+        "uid": "test_minbet",
+        "amount": 5,
+        "at": 1795397097870
+      },
+      "3ea46d7c-8b0e-4cd4-99b6-e802bc114c65": {
+        "uid": "test_minbet",
+        "amount": 2,
+        "at": 1795397097890
+      }
+    },
+    "recentWins": [
+      {
+        "uid": "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1",
+        "name": "SeagalSilva",
+        "game": "Dragão VIP 3×5",
+        "payout": 50000,
+        "at": 1795397521855
+      },
+      {
+        "uid": "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1",
+        "name": "SeagalSilva",
+        "game": "Dragão VIP 3×5",
+        "payout": 50000,
+        "at": 1795397519109
+      },
+      {
+        "uid": "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1",
+        "name": "SeagalSilva",
+        "game": "Dragão VIP 3×5",
+        "payout": 4000,
+        "at": 1795397515726
+      },
+      {
+        "uid": "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1",
+        "name": "SeagalSilva",
+        "game": "Dragão VIP 3×5",
+        "payout": 30000,
+        "at": 1795397503174
+      },
+      {
+        "uid": "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1",
+        "name": "SeagalSilva",
+        "game": "Roleta",
+        "payout": 4,
+        "at": 1795394833488
+      },
+      {
+        "uid": "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1",
+        "name": "SeagalSilva",
+        "game": "Roleta",
+        "payout": 8,
+        "at": 1795394772076
+      },
+      {
+        "uid": "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1",
+        "name": "SeagalSilva",
+        "game": "Roleta",
+        "payout": 6,
+        "at": 1795394745865
+      },
+      {
+        "uid": "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1",
+        "name": "SeagalSilva",
+        "game": "Roleta",
+        "payout": 6,
+        "at": 1795394742214
+      },
+      {
+        "uid": "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1",
+        "name": "SeagalSilva",
+        "game": "Roleta",
+        "payout": 4,
+        "at": 1795394718027
+      }
+    ]
+  }
+}

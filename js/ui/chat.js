@@ -1,11 +1,17 @@
 // Chat UI controller: wires message feed, input submit, and shortcuts.
 import { S } from "../state.js";
 import { on } from "../bus.js";
-import { $ } from "../utils.js";
+import { $, colorFromString, esc } from "../utils.js";
 import { sendChat } from "../systems/chat.js";
-import { colorFromString, esc } from "../utils.js";
 
 let bound = false;
+
+function setChatOpen(open) {
+  const widget = $("#chat-widget");
+  const hud = $(".hud");
+  if (widget) widget.classList.toggle("active", open);
+  if (hud) hud.classList.toggle("chat-open", open);
+}
 
 export function initChatUI() {
   const form = $("#chat-form");
@@ -25,13 +31,39 @@ export function initChatUI() {
       await sendChat(text);
       renderMessages();
       input.blur();
+      setChatOpen(false);
     };
 
     if (btnChat) {
+      btnChat.onpointerdown = (e) => {
+        // Prevent input blur from firing before click toggles chat cleanly
+        e.preventDefault();
+      };
       btnChat.onclick = () => {
-        input.focus();
+        const widget = $("#chat-widget");
+        const nextOpen = !(widget && widget.classList.contains("active"));
+        setChatOpen(nextOpen);
+        if (nextOpen) {
+          input.focus();
+          list.scrollTop = list.scrollHeight;
+        } else {
+          input.blur();
+        }
       };
     }
+
+    input.onfocus = () => {
+      setChatOpen(true);
+    };
+
+    input.onblur = (e) => {
+      if (e.relatedTarget && form.contains(e.relatedTarget)) return;
+      setTimeout(() => {
+        if (document.activeElement !== input && !form.contains(document.activeElement)) {
+          setChatOpen(false);
+        }
+      }, 120);
+    };
 
     // Enter to focus chat if not already typing
     window.addEventListener("keydown", (e) => {
@@ -41,9 +73,11 @@ export function initChatUI() {
 
       if (e.key === "Enter" && !isInput && !hasModal) {
         e.preventDefault();
+        setChatOpen(true);
         input.focus();
       } else if (e.key === "Escape" && document.activeElement === input) {
         input.blur();
+        setChatOpen(false);
       }
     });
 

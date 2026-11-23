@@ -11,6 +11,7 @@ export function startSync(uid) {
   stopSync();
   return new Promise((resolve) => {
     let first = true;
+    let prevWallet = null;
     const listen = (r, cb) => offs.push(onValue(r, cb, (err) => {
       console.warn("[sync]", err);
       if (first) { first = false; resolve(false); }
@@ -21,7 +22,26 @@ export function startSync(uid) {
     listen(ref(db, `users/${uid}/save`), (s) => {
       const v = s.val();
       if (v) {
-        S.save = { wallet: { pp: 0, bronze: 0, silver: 0, gold: 0, ...(v.wallet || {}) }, inv: v.inv || {} };
+        const nextWallet = { pp: 0, bronze: 0, silver: 0, gold: 0, ...(v.wallet || {}) };
+        if (prevWallet) {
+          const dBronze = nextWallet.bronze - prevWallet.bronze;
+          const dSilver = nextWallet.silver - prevWallet.silver;
+          const dGold = nextWallet.gold - prevWallet.gold;
+          const dPP = nextWallet.pp - prevWallet.pp;
+
+          if (dBronze > 0 || dSilver > 0 || dGold > 0) {
+            emit("coinsReceived", {
+              bronze: Math.max(0, dBronze),
+              silver: Math.max(0, dSilver),
+              gold: Math.max(0, dGold)
+            });
+          }
+          if (dPP > 0) {
+            emit("ppReceived", { pp: dPP });
+          }
+        }
+        prevWallet = { ...nextWallet };
+        S.save = { wallet: nextWallet, inv: v.inv || {} };
         emit("save");
       }
       if (first) { first = false; resolve(!!v); }

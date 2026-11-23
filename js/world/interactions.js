@@ -3,21 +3,50 @@ import { S } from "../state.js";
 import { t } from "../i18n.js";
 import { me, DIRV } from "./player.js";
 import { farmIndex, BUILDINGS, LAND_META, buildingAtTile, landAtTile } from "./map.js";
-import { interactTile, tileData, cropState, canUseScope } from "../systems/farming.js";
+import { exitMapEditMode } from "./editor.js";
+import {
+  enterCasinoRoom,
+  exitCasinoRoom,
+  computeCasinoFocus,
+  focusLabelCasino,
+  performCasinoAction,
+  handleCasinoTap,
+  tickCasinoPending
+} from "./casinoRoom.js";
+import { interactTile, tileData, cropState, canUseScope, landModeOf } from "../systems/farming.js";
 import { CROPS } from "../data/crops.js";
+import { releaseSlotMachine, forfeitRouletteFreeSpins } from "../systems/casino.js";
 import { openGameMarket } from "../ui/modals/gameMarket.js";
 import { openPlayerMarket } from "../ui/modals/playerMarket.js";
 import { openLand } from "../ui/modals/land.js";
 import { openWorkstation } from "../ui/modals/workstation.js";
+import { openGovernment } from "../ui/modals/government.js";
+import { playEnterBuilding } from "../systems/audio.js";
+
+function handleLeaveCasino() {
+  releaseSlotMachine();
+  if ((S.casino.roulette?.freeSpins || 0) > 0) {
+    forfeitRouletteFreeSpins();
+  }
+  const b = BUILDINGS.find((x) => x.id === "casino");
+  exitCasinoRoom(me, b);
+}
 
 /** Best thing to interact with right now (or null). */
 export function computeFocus() {
+  if (S.room === "casino") return computeCasinoFocus(me);
+
   const v = DIRV[me.dir];
   const probes = [[me.x + v[0] * 0.8, me.y + v[1] * 0.8], [me.x, me.y]];
   for (const [px, py] of probes) {
     const tx = Math.floor(px), ty = Math.floor(py), key = `${tx}_${ty}`;
     const f = farmIndex.get(key);
-    if (f && canUseScope(f.scope)) return { kind: "tile", scope: f.scope, tx, ty, key };
+    if (f && canUseScope(f.scope)) {
+      if (f.scope !== "public" && landModeOf(f.scope) !== "farm" && !tileData(f.scope, key)) {
+        continue;
+      }
+      return { kind: "tile", scope: f.scope, tx, ty, key };
+    }
   }
   for (const b of BUILDINGS) {
     if (Math.hypot(me.x - b.front.x, me.y - b.front.y) < 2.2) return { kind: "building", id: b.id };
@@ -30,6 +59,7 @@ export function computeFocus() {
 
 export function focusLabel(f) {
   if (!f) return null;
+  if (S.room === "casino") return focusLabelCasino(f);
   if (f.kind === "building") return t("act.open", { place: t(`place.${f.id}`) });
   if (f.kind === "land") return t("act.viewLand", { id: f.id });
   const tile = tileData(f.scope, f.key);
@@ -45,13 +75,22 @@ export function focusLabel(f) {
 
 export function perform(f) {
   if (!f) return;
+  if (S.room === "casino") {
+    return performCasinoAction(f, handleLeaveCasino);
+  }
   if (f.kind === "building") {
+    playEnterBuilding();
     if (f.id === "gameMarket") return openGameMarket();
     if (f.id === "bazaar") return openPlayerMarket();
     if (f.id === "workstation") return openWorkstation();
+    if (f.id === "government") return openGovernment();
+    if (f.id === "casino") return enterCasinoRoom(me, exitMapEditMode);
     return;
   }
-  if (f.kind === "land") return openLand(f.id);
+  if (f.kind === "land") {
+    playEnterBuilding();
+    return openLand(f.id);
+  }
   // face the tile
   const dx = f.tx + 0.5 - me.x, dy = f.ty + 0.5 - me.y;
   if (Math.abs(dx) > Math.abs(dy)) me.dir = dx > 0 ? "right" : "left"; else if (Math.abs(dy) > 0.2) me.dir = dy > 0 ? "down" : "up";
@@ -60,13 +99,17 @@ export function perform(f) {
 
 /** Tap/click on the world at tile coords (wx, wy). */
 export function handleTap(wx, wy) {
+  if (S.room === "casino") return handleCasinoTap(wx, wy, me);
+
   const tx = Math.floor(wx), ty = Math.floor(wy), key = `${tx}_${ty}`;
 
   const farm = farmIndex.get(key);
   if (farm && canUseScope(farm.scope)) {
-    me.target = { x: tx + 0.5, y: ty + 0.5 };
-    me.pending = { kind: "tile", scope: farm.scope, tx, ty, key };
-    return;
+    if (farm.scope === "public" || landModeOf(farm.scope) === "farm" || tileData(farm.scope, key)) {
+      me.target = { x: tx + 0.5, y: ty + 0.5 };
+      me.pending = { kind: "tile", scope: farm.scope, tx, ty, key };
+      return;
+    }
   }
   const b = buildingAtTile(tx, ty);
   if (b) { me.target = { ...b.front }; me.pending = { kind: "building", id: b.id }; return; }
@@ -80,6 +123,8 @@ export function handleTap(wx, wy) {
 
 /** Run the pending tap action once the player is close enough. */
 export function tickPending() {
+  if (S.room === "casino") return tickCasinoPending(me, handleLeaveCasino);
+
   const p = me.pending;
   if (!p) return;
   let px, py, range;

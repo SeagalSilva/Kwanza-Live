@@ -1,12 +1,19 @@
 // The Bazaar: players trade with each other using bronze / silver / gold coins.
-import { S, inv, bal } from "../../state.js";
+import { S, now, inv, bal } from "../../state.js";
 import { t, fmtNum } from "../../i18n.js";
-import { esc } from "../../utils.js";
+import { esc, fmtTime } from "../../utils.js";
 import { COINS, money, curName } from "../../data/currencies.js";
 import { ALL_ITEM_IDS, itemIcon, itemName } from "../../data/items.js";
-import { MAX_LISTING_PRICE } from "../../config.js";
-import { createListing, cancelListing, buyListing } from "../../systems/market.js";
+import { MAX_LISTING_PRICE, MAX_PLAYER_LISTINGS, LISTING_TTL_MS } from "../../config.js";
+import { createListing, cancelListing, buyListing, isListingExpired, myActiveListingsCount } from "../../systems/market.js";
 import { openModal } from "../modal.js";
+
+function remainingText(l) {
+  const exp = typeof l.expiresAt === "number" ? l.expiresAt : (typeof l.createdAt === "number" ? l.createdAt + LISTING_TTL_MS : 0);
+  if (!exp) return "";
+  const leftSec = Math.max(0, Math.floor((exp - now()) / 1000));
+  return leftSec <= 0 ? t("pm.expired") : fmtTime(leftSec);
+}
 
 export function openPlayerMarket() {
   let tab = "browse";
@@ -21,20 +28,24 @@ export function openPlayerMarket() {
       const all = Object.entries(S.listings)
         .map(([id, l]) => ({ id, ...l }))
         .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      const open = all.filter((l) => !l.soldTo);
+      const open = all.filter((l) => !l.soldTo && !isListingExpired(l));
 
-      const card = (l, mine) => `
+      const card = (l, mine) => {
+        const exp = isListingExpired(l);
+        const rem = remainingText(l);
+        return `
         <div class="row">
           <span class="ico-lg">${itemIcon(l.item)}</span>
           <div class="grow"><b>${esc(itemName(l.item))}</b> <span class="qty">×${fmtNum(l.qty)}</span>
-            <small>${esc(t("pm.seller"))}: ${esc(l.sellerName || "?")}</small></div>
+            <small>${esc(t("pm.seller"))}: ${esc(l.sellerName || "?")}${rem ? ` · ⏱️ ${esc(rem)}` : ""}</small></div>
           <div class="btns col">
             ${money(l.price, l.currency)}
             ${mine
-              ? `<button class="btn small alt" data-cancel="${l.id}" type="button">${esc(t("act.cancel"))}</button>`
+              ? `<button class="btn small alt" data-cancel="${l.id}" type="button">${esc(exp ? t("pm.reclaim") : t("act.cancel"))}</button>`
               : `<button class="btn small" data-buy="${l.id}" type="button" ${bal(l.currency) < l.price ? "disabled" : ""}>${esc(t("act.buy"))}</button>`}
           </div>
         </div>`;
+      };
 
       let content = "";
       if (tab === "browse") {
@@ -45,14 +56,20 @@ export function openPlayerMarket() {
           (list.length ? list.map((l) => card(l, l.seller === S.uid)).join("") : `<p class="muted">${esc(t("pm.empty"))}</p>`);
       } else if (tab === "mine") {
         const mine = all.filter((l) => l.seller === S.uid);
-        content = mine.length
-          ? mine.map((l) => l.soldTo
-              ? `<div class="row"><span class="ico-lg">${itemIcon(l.item)}</span><div class="grow"><b>${esc(itemName(l.item))}</b> <span class="qty">×${fmtNum(l.qty)}</span><small>✔ ${esc(t("pm.sold"))}</small></div>${money(l.price, l.currency)}</div>`
-              : card(l, true)).join("")
-          : `<p class="muted">${esc(t("pm.noneMine"))}</p>`;
+        const activeCount = myActiveListingsCount();
+        content = `<p class="muted" style="font-size: 12px;">${esc(t("pm.activeSlots", { n: activeCount, max: MAX_PLAYER_LISTINGS }))}</p>` +
+          (mine.length
+            ? mine.map((l) => l.soldTo
+                ? `<div class="row"><span class="ico-lg">${itemIcon(l.item)}</span><div class="grow"><b>${esc(itemName(l.item))}</b> <span class="qty">×${fmtNum(l.qty)}</span><small>✔ ${esc(t("pm.sold"))}</small></div>${money(l.price, l.currency)}</div>`
+                : card(l, true)).join("")
+            : `<p class="muted">${esc(t("pm.noneMine"))}</p>`);
       } else {
+        const activeCount = myActiveListingsCount();
+        const atLimit = activeCount >= MAX_PLAYER_LISTINGS;
         const items = ALL_ITEM_IDS.filter((id) => inv(id) > 0);
-        content = items.length ? `
+        content = `
+          <p class="muted" style="font-size: 12px;">${esc(t("pm.activeSlots", { n: activeCount, max: MAX_PLAYER_LISTINGS }))} · ${esc(t("pm.ttlNote"))}</p>
+        ` + (items.length ? `
           <label>${esc(t("pm.item"))}</label>
           <select id="pm-item">${items.map((id) => `<option value="${id}">${esc(itemName(id))} (×${fmtNum(inv(id))})</option>`).join("")}</select>
           <div class="grid2">
@@ -61,9 +78,9 @@ export function openPlayerMarket() {
           </div>
           <label>${esc(t("pm.currency"))}</label>
           <select id="pm-cur">${COINS.map((c) => `<option value="${c}">${esc(curName(c))}</option>`).join("")}</select>
-          <button class="btn" id="pm-create" type="button">${esc(t("pm.create"))}</button>
+          <button class="btn" id="pm-create" type="button" ${atLimit ? "disabled" : ""}>${esc(atLimit ? t("pm.limitReached", { n: MAX_PLAYER_LISTINGS }) : t("pm.create"))}</button>
           <p class="muted small-note">${esc(t("pm.escrow"))}</p>`
-          : `<p class="muted">${esc(t("pm.noItems"))}</p>`;
+          : `<p class="muted">${esc(t("pm.noItems"))}</p>`);
       }
 
       body.innerHTML = `

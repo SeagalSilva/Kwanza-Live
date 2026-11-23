@@ -6,6 +6,8 @@ import { watchAuth, logout } from "./systems/auth.js";
 import { loadProfile, ensureSave } from "./systems/profile.js";
 import { startSync, stopSync } from "./systems/sync.js";
 import { startChatSync, stopChatSync } from "./systems/chat.js";
+import { syncMapFromServer, startMapSync, stopMapSync } from "./systems/government.js";
+import { syncLandsFromServer } from "./systems/lands.js";
 import { showScreen } from "./ui/screens.js";
 import { initLogin } from "./ui/login.js";
 import { startOnboarding } from "./ui/onboarding.js";
@@ -24,13 +26,16 @@ function teardown() {
   stopGame();
   stopSync();
   stopChatSync();
+  stopMapSync();
   resetState();
 }
 
 async function enterGame() {
+  await Promise.all([syncMapFromServer(), syncLandsFromServer()]);
   const hasSave = await startSync(S.uid);
   if (!hasSave) await ensureSave(S.uid);
   startChatSync();
+  startMapSync();
   showScreen("game");
   if (!hudReady) { initHud(); hudReady = true; }
   startGame();

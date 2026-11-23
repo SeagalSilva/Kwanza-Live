@@ -1,13 +1,15 @@
 // Canvas renderer: ground, farms, lands, buildings, trees and characters.
-import { TILE, MAP_W, MAP_H } from "../config.js";
+import { TILE } from "../config.js";
 import { S } from "../state.js";
 import { t, fmtNum } from "../i18n.js";
-import { GRID, T, PUBLIC_FARM, BUILDINGS, LAND_META, fenceIndex, farmIndex } from "./map.js";
+import { mapSize, GRID, T, PUBLIC_FARM, BUILDINGS, LAND_META, fenceIndex, farmIndex } from "./map.js";
 import { LAND_SIZE } from "../data/lands.js";
 import { CROPS } from "../data/crops.js";
 import { cropState, tileData } from "../systems/farming.js";
 import { sanitizeLook } from "../data/character.js";
 import { drawCharacter } from "./character.js";
+import { renderCasinoRoom } from "./casinoRoom.js";
+import { drawLandFloor, drawLandFenceDecor, pushLandEntities } from "./landVisuals.js";
 import { hash2, colorFromString } from "../utils.js";
 
 export const view = { cw: 0, ch: 0, zoom: 1, dpr: 1, camX: 0, camY: 0 };
@@ -50,7 +52,7 @@ function pill(ctx, text, x, y, { bg = "rgba(10,18,14,.72)", fg = "#fff", size = 
   ctx.fillText(text, x, y + 0.5);
 }
 
-function drawSpeechBubble(ctx, text, cx, bottomY, alpha = 1) {
+export function drawSpeechBubble(ctx, text, cx, bottomY, alpha = 1) {
   if (!text || alpha <= 0) return;
   ctx.save();
   ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
@@ -253,8 +255,15 @@ function drawTree(ctx, tx, ty) {
  * g = { me, others: [{p, id}], focus, time }
  */
 export function render(ctx, g) {
+  if (S.room === "casino") {
+    return renderCasinoRoom(ctx, view, g, {
+      sanitizeLook,
+      myLook: sanitizeLook(S.profile?.look)
+    });
+  }
+
   const { cw, ch, zoom, dpr } = view;
-  const vw = cw / zoom, vh = ch / zoom, worldW = MAP_W * TILE, worldH = MAP_H * TILE;
+  const vw = cw / zoom, vh = ch / zoom, worldW = mapSize.w * TILE, worldH = mapSize.h * TILE;
   let cx = g.me.x * TILE - vw / 2, cy = g.me.y * TILE - vh / 2;
   cx = worldW <= vw ? (worldW - vw) / 2 : Math.max(0, Math.min(worldW - vw, cx));
   cy = worldH <= vh ? (worldH - vh) / 2 : Math.max(0, Math.min(worldH - vh, cy));
@@ -265,23 +274,53 @@ export function render(ctx, g) {
   const s = dpr * zoom;
   ctx.setTransform(s, 0, 0, s, -cx * s, -cy * s);
 
-  const x0 = Math.max(0, Math.floor(cx / TILE)), x1 = Math.min(MAP_W - 1, Math.ceil((cx + vw) / TILE));
-  const y0 = Math.max(0, Math.floor(cy / TILE)), y1 = Math.min(MAP_H - 1, Math.ceil((cy + vh) / TILE));
+  const x0 = Math.max(0, Math.floor(cx / TILE)), x1 = Math.min(mapSize.w - 1, Math.ceil((cx + vw) / TILE));
+  const y0 = Math.max(0, Math.floor(cy / TILE)), y1 = Math.min(mapSize.h - 1, Math.ceil((cy + vh) / TILE));
   const entities = [];
+
+  const visibleLands = [];
+  for (const l of LAND_META) {
+    if (l.x0 > x1 + 1 || l.x0 + LAND_SIZE < x0 - 1 || l.y0 > y1 + 1 || l.y0 + LAND_SIZE < y0 - 1) continue;
+    const owner = S.lands[l.id];
+    const op = S.landOps?.[l.id];
+    const mode = owner ? (op?.mode || owner.mode || "farm") : "farm";
+    visibleLands.push({ l, owner, op, mode });
+  }
 
   for (let ty = y0; ty <= y1; ty++) {
     for (let tx = x0; tx <= x1; tx++) {
       drawGround(ctx, tx, ty, g.time);
+    }
+  }
+
+  // Custom interior floor for non-farm private lands (pasture, market courtyard, luck plaza)
+  for (const { l, mode } of visibleLands) {
+    drawLandFloor(ctx, l, mode, g.time);
+  }
+
+  for (let ty = y0; ty <= y1; ty++) {
+    for (let tx = x0; tx <= x1; tx++) {
       const type = GRID[ty][tx];
       if (type === T.FENCE || type === T.GATE) drawFence(ctx, tx, ty);
       if (type === T.TREE) entities.push({ y: (ty + 1) * TILE, draw: () => drawTree(ctx, tx, ty) });
     }
   }
 
+  for (const { l, mode } of visibleLands) {
+    drawLandFenceDecor(ctx, l, mode, g.time);
+    pushLandEntities(entities, ctx, l, mode, S.landOps?.[l.id], g.time);
+  }
+
   // crops
   for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
     const f = farmIndex.get(`${tx}_${ty}`);
-    if (f) drawCrop(ctx, tx, ty, f.scope, `${tx}_${ty}`, g.time);
+    if (f) {
+      if (f.scope !== "public") {
+        const lMode = S.landOps?.[f.scope]?.mode || S.lands?.[f.scope]?.mode || "farm";
+        if (lMode !== "farm") continue;
+      }
+      drawCrop(ctx, tx, ty, f.scope, `${tx}_${ty}`, g.time);
+    }
   }
 
   // focus highlight
@@ -312,15 +351,53 @@ export function render(ctx, g) {
   const f = PUBLIC_FARM;
   pill(ctx, `🌾 ${t("place.publicFarm")}`, (f.x0 + f.w / 2) * TILE, (f.y0 - 0.45) * TILE, { size: 12, border: "#59d17a" });
   for (const b of BUILDINGS) {
-    const icon = b.id === "gameMarket" ? "🏪" : b.id === "bazaar" ? "🧺" : "🔨";
+    const icon = b.id === "gameMarket" ? "🏪" : b.id === "bazaar" ? "🧺" : b.id === "government" ? "🏛️" : b.id === "casino" ? "🎰" : "🔨";
     pill(ctx, `${icon} ${t(`place.${b.id}`)}`, (b.x + b.w / 2) * TILE, (b.y - 0.35) * TILE, { size: 12, border: "#f5c518" });
   }
   for (const l of LAND_META) {
     if (l.x0 > x1 + 1 || l.x0 + LAND_SIZE < x0 - 1 || l.y0 > y1 + 1 || l.y0 + LAND_SIZE < y0 - 1) continue;
     const owner = S.lands[l.id];
-    const text = owner ? `👑 ${owner.ownerName}` : `🏷️ 10 🥇`;
+    const opMode = S.landOps?.[l.id]?.mode || owner?.mode;
+    const modeIcon = opMode === "animals" ? "🐄" : opMode === "bulkShop" ? "🏪" : opMode === "luckShop" ? "🎲" : "👑";
+    const text = owner ? `${modeIcon} ${owner.ownerName}` : `🏷️ 10 🥇`;
     pill(ctx, text, (l.x0 + LAND_SIZE / 2) * TILE, (l.y0 - 0.4) * TILE, {
       size: 10, border: owner ? (owner.owner === S.uid ? "#f5c518" : "#d9534f") : null
+    });
+  }
+
+  // ── admin map edit overlays ──
+  if (S.mapEditMode) {
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    const drawEditable = (rx, ry, rw, rh, col = "rgba(89, 209, 122, 0.85)") => {
+      ctx.strokeStyle = col;
+      ctx.strokeRect(rx * TILE + 1, ry * TILE + 1, rw * TILE - 2, rh * TILE - 2);
+    };
+    drawEditable(f.x0, f.y0, f.w, f.h, "rgba(89, 209, 122, 0.9)");
+    for (const b of BUILDINGS) drawEditable(b.x, b.y, b.w, b.h, "rgba(245, 197, 24, 0.85)");
+    for (const l of LAND_META) {
+      if (l.x0 > x1 + 1 || l.x0 + LAND_SIZE < x0 - 1 || l.y0 > y1 + 1 || l.y0 + LAND_SIZE < y0 - 1) continue;
+      drawEditable(l.x0, l.y0, LAND_SIZE, LAND_SIZE, "rgba(110, 195, 255, 0.85)");
+    }
+    ctx.restore();
+  }
+
+  // ── active drag preview ──
+  if (g.drag) {
+    const d = g.drag;
+    const dx = d.curX * TILE, dy = d.curY * TILE, dw = d.w * TILE, dh = d.h * TILE;
+    ctx.save();
+    ctx.fillStyle = "rgba(245, 197, 24, 0.28)";
+    ctx.fillRect(dx, dy, dw, dh);
+    ctx.strokeStyle = "#f5c518";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([7, 4]);
+    ctx.strokeRect(dx + 1.5, dy + 1.5, dw - 3, dh - 3);
+    ctx.setLineDash([]);
+    ctx.restore();
+    pill(ctx, `✥ ${d.label} (${d.curX}, ${d.curY})`, dx + dw / 2, dy - 16, {
+      bg: "#f5c518", fg: "#1b1500", size: 12, border: "#1b1500"
     });
   }
   for (const o of g.others) pill(ctx, o.p.name || "?", o.p.dx * TILE, o.p.dy * TILE - 46, { size: 10 });

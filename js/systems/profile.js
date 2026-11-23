@@ -15,7 +15,7 @@ export async function loadProfile(uid) {
 }
 
 export const defaultSave = () => ({
-  wallet: { pp: START.pp, bronze: 0, silver: 0, gold: 0 },
+  wallet: { pp: START.pp, bronze: START.bronze || 0, silver: 0, gold: 0 },
   inv: { ...START.inv }
 });
 

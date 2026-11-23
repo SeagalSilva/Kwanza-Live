@@ -19,7 +19,7 @@ export function startPresence(me) {
     onDisconnect(myRef).remove();
     set(myRef, {
       name: S.profile.username, look: sanitizeLook(S.profile.look),
-      x: round(me.x), y: round(me.y), d: me.dir, m: 0, t: serverTimestamp()
+      x: round(me.x), y: round(me.y), d: me.dir, m: 0, room: S.room || "world", t: serverTimestamp()
     });
   }));
 
@@ -45,12 +45,12 @@ const round = (n) => Math.round(n * 100) / 100;
 /** Send my position (throttled by the game loop). */
 export function publishPosition(me) {
   if (!myRef) return;
-  const x = round(me.x), y = round(me.y);
-  const changed = x !== lastSent.x || y !== lastSent.y || me.dir !== lastSent.d;
+  const x = round(me.x), y = round(me.y), room = S.room || "world";
+  const changed = x !== lastSent.x || y !== lastSent.y || me.dir !== lastSent.d || room !== lastSent.room;
   const heartbeat = Date.now() - lastSent.t > 15_000;
   if (!changed && !heartbeat) return;
-  lastSent = { x, y, d: me.dir, t: Date.now() };
-  update(myRef, { x, y, d: me.dir, m: me.moving ? 1 : 0, t: serverTimestamp() }).catch(() => {});
+  lastSent = { x, y, d: me.dir, room, t: Date.now() };
+  update(myRef, { x, y, d: me.dir, m: me.moving ? 1 : 0, room, t: serverTimestamp() }).catch(() => {});
 }
 
 export const isFresh = (p) => !p.t || now() - p.t < STALE_MS;

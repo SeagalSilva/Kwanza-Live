@@ -8,6 +8,7 @@ import { t } from "../i18n.js";
 import { toast } from "../ui/toast.js";
 import { fmtTime } from "../utils.js";
 import { commit, savePath } from "./db.js";
+import { playPlant, playHarvest } from "./audio.js";
 
 export const tilePath = (scope, key) =>
   scope === "public" ? `world/publicFarm/${key}` : `world/landTiles/${scope}/${key}`;
@@ -29,6 +30,9 @@ export function cropState(tile) {
 /** Public land is open to everybody; a private land only to its owner. */
 export const canUseScope = (scope) => scope === "public" || S.lands[scope]?.owner === S.uid;
 
+export const landModeOf = (scope) =>
+  scope === "public" ? "farm" : (S.landOps?.[scope]?.mode || S.lands?.[scope]?.mode || "farm");
+
 const busy = new Set();
 async function guarded(key, fn) {
   if (busy.has(key)) return;
@@ -41,7 +45,13 @@ export async function interactTile(scope, key) {
   const tile = tileData(scope, key);
   const st = cropState(tile);
 
-  if (st.stage === "empty") return plant(scope, key);
+  if (st.stage === "empty") {
+    if (scope !== "public" && landModeOf(scope) !== "farm") {
+      toast(t("msg.landNotFarmMode"), "bad");
+      return;
+    }
+    return plant(scope, key);
+  }
 
   const crop = t(`crop.${tile.crop}`);
   const owner = tile.byName || "?";
@@ -70,7 +80,10 @@ async function plant(scope, key) {
       },
       [savePath(S.uid, `inv/${seed}`)]: increment(-1)
     }, "msg.tileTaken");
-    if (ok) toast(t("msg.planted", { crop: t(`crop.${cropId}`) }), "good");
+    if (ok) {
+      playPlant();
+      toast(t("msg.planted", { crop: t(`crop.${cropId}`) }), "good");
+    }
   });
 }
 
@@ -81,7 +94,10 @@ async function harvest(scope, key, tile) {
       [tilePath(scope, key)]: null,
       [savePath(S.uid, `inv/${cropItemId(tile.crop)}`)]: increment(c.yield)
     });
-    if (ok) toast(t("msg.harvested", { n: c.yield, crop: t(`crop.${tile.crop}`), icon: c.emoji }), "good");
+    if (ok) {
+      playHarvest();
+      toast(t("msg.harvested", { n: c.yield, crop: t(`crop.${tile.crop}`), icon: c.emoji }), "good");
+    }
   });
 }
 

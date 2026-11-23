@@ -6,7 +6,10 @@ import { resize, render, screenToWorld } from "./world/renderer.js";
 import { me, resetMe, updateMe } from "./world/player.js";
 import { input, initInput, setInputActive } from "./world/input.js";
 import { computeFocus, focusLabel, perform, handleTap, tickPending } from "./world/interactions.js";
+import { mapSize } from "./world/map.js";
+import { isMapEditMode, getDragState, startDrag, moveDrag, endDrag, exitMapEditMode } from "./world/editor.js";
 import { startPresence, stopPresence, publishPosition, isFresh } from "./systems/presence.js";
+import { stopCasinoSync, releaseSlotMachine } from "./systems/casino.js";
 import { drawPortrait, setInteractLabel, resetInteractLabel } from "./ui/hud.js";
 import { closeModal } from "./ui/modal.js";
 
@@ -32,7 +35,17 @@ export function startGame() {
 
   initInput(canvas, {
     onInteract: () => perform(focus),
-    onTap: (px, py) => { const w = screenToWorld(px, py); handleTap(w.x, w.y); }
+    onTap: (px, py) => { const w = screenToWorld(px, py); handleTap(w.x, w.y); },
+    onPointerDown: (px, py) => {
+      if (!isMapEditMode()) return false;
+      const w = screenToWorld(px, py);
+      return startDrag(w.x, w.y);
+    },
+    onPointerMove: (px, py) => {
+      const w = screenToWorld(px, py);
+      moveDrag(w.x, w.y);
+    },
+    onPointerUp: () => { endDrag(); }
   });
   if (!listening) {
     listening = true;
@@ -40,6 +53,12 @@ export function startGame() {
     on("modal", (open) => { if (open) { input.up = input.down = input.left = input.right = false; me.target = null; } });
     on("lang", () => resetInteractLabel());
     on("selected", () => resetInteractLabel());
+    on("mapUpdated", () => {
+      if (S.room === "world") {
+        me.x = Math.max(2.5, Math.min(mapSize.w - 2.5, me.x));
+        me.y = Math.max(2.5, Math.min(mapSize.h - 2.5, me.y));
+      }
+    });
   }
 
   setInputActive(true);
@@ -53,6 +72,10 @@ export function stopGame() {
   running = false;
   cancelAnimationFrame(raf);
   setInputActive(false);
+  exitMapEditMode();
+  stopCasinoSync();
+  releaseSlotMachine();
+  S.room = "world";
   closeModal();
   stopPresence();
   window.removeEventListener("resize", onResize);
@@ -71,10 +94,11 @@ function loop(ts) {
   focus = computeFocus();
   setInteractLabel(focusLabel(focus));
 
-  // smooth other players
+  // smooth other players in the same room
+  const myRoom = S.room || "world";
   const others = [];
   for (const [id, p] of Object.entries(S.players)) {
-    if (!isFresh(p)) continue;
+    if (!isFresh(p) || (p.room || "world") !== myRoom) continue;
     const k = Math.min(1, dt * 10);
     const px = p.dx, py = p.dy;
     p.dx += (p.x - p.dx) * k; p.dy += (p.y - p.dy) * k;
@@ -86,5 +110,5 @@ function loop(ts) {
   if (ts - lastPublish > 130) { lastPublish = ts; publishPosition(me); }
   if (ts - lastPortrait > 120) { lastPortrait = ts; drawPortrait(time); }
 
-  render(ctx, { me, others, focus, time });
+  render(ctx, { me, others, focus, time, drag: getDragState() });
 }
