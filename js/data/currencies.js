@@ -7,10 +7,10 @@ export const ALL_CURRENCIES = ["pp", ...COINS];
 
 /** Coin exchange rates (done in the Wallet). */
 export const EXCHANGES = [
-  { from: "bronze", to: "silver", cost: 100, gain: 1 },
-  { from: "silver", to: "bronze", cost: 1,   gain: 100 },
-  { from: "silver", to: "gold",   cost: 100, gain: 1 },
-  { from: "gold",   to: "silver", cost: 1,   gain: 100 }
+  { from: "bronze", to: "silver", cost: 150, gain: 1 },
+  { from: "silver", to: "bronze", cost: 1,   gain: 120 },
+  { from: "silver", to: "gold",   cost: 115, gain: 1 },
+  { from: "gold",   to: "silver", cost: 1,   gain: 95 }
 ];
 
 export const curIcon = (c) =>

@@ -73,8 +73,11 @@ export function getLandModeCooldown(op) {
 
 export const ownedLandsCount = () => Object.values(S.lands).filter((l) => l.owner === S.uid).length;
 
+const SILVER_IN_BRONZE = 150;
+const GOLD_IN_BRONZE = 115 * SILVER_IN_BRONZE; // 17,250
+
 export const totalCoinsInBronze = () =>
-  (bal("gold") || 0) * 10000 + (bal("silver") || 0) * 100 + (bal("bronze") || 0);
+  (bal("gold") || 0) * GOLD_IN_BRONZE + (bal("silver") || 0) * SILVER_IN_BRONZE + (bal("bronze") || 0);
 
 export function computeLandCoinDeductions(neededBronze = LAND_PRICE_BRONZE_EQUIV) {
   let needed = neededBronze;
@@ -82,11 +85,11 @@ export function computeLandCoinDeductions(neededBronze = LAND_PRICE_BRONZE_EQUIV
   const s = bal("silver") || 0;
   const b = bal("bronze") || 0;
 
-  let takeGold = Math.min(g, Math.floor(needed / 10000));
-  needed -= takeGold * 10000;
+  let takeGold = Math.min(g, Math.floor(needed / GOLD_IN_BRONZE));
+  needed -= takeGold * GOLD_IN_BRONZE;
 
-  let takeSilver = Math.min(s, Math.floor(needed / 100));
-  needed -= takeSilver * 100;
+  let takeSilver = Math.min(s, Math.floor(needed / SILVER_IN_BRONZE));
+  needed -= takeSilver * SILVER_IN_BRONZE;
 
   let takeBronze = Math.min(b, needed);
   needed -= takeBronze;
@@ -94,11 +97,11 @@ export function computeLandCoinDeductions(neededBronze = LAND_PRICE_BRONZE_EQUIV
   if (needed > 0) {
     if (s > takeSilver) {
       takeSilver += 1;
-      const refundBronze = 100 - needed;
+      const refundBronze = SILVER_IN_BRONZE - needed;
       takeBronze -= refundBronze;
     } else if (g > takeGold) {
       takeGold += 1;
-      const refundBronze = 10000 - needed;
+      const refundBronze = GOLD_IN_BRONZE - needed;
       takeBronze -= refundBronze;
     }
   }

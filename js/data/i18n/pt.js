@@ -146,7 +146,7 @@ export default {
   "wal.ppInfo": "Ganhos ao vender colheita e convertidos em bronze no Posto de Trabalho",
   "wal.coinInfo": "Usadas no Mercado do Jogo, Bazar dos Jogadores e terrenos",
   "wal.exchange": "Trocar moedas",
-  "wal.rate": "100 bronze = 1 prata · 100 prata = 1 ouro",
+  "wal.rate": "150 bronze → 1 prata · 1 prata → 120 bronze · 115 prata → 1 ouro · 1 ouro → 95 prata",
 
   // Game market
   "gm.info": "Pronto em {time}s · rende {n}",
@@ -188,7 +188,7 @@ export default {
   "land.title": "Terreno {id}",
   "land.forSale": "Este terreno está à venda!",
   "land.perks": "Só tu podes semear aqui, criar animais ou abrir uma loja!",
-  "land.coinPriceNote": "Os terrenos custam 10 moedas de ouro (ou equivalente em moedas: 10 🥇 = 1.000 🥈 = 100.000 🥉).",
+  "land.coinPriceNote": "Os terrenos custam 10 moedas de ouro (ou equivalente em moedas: 10 🥇 = 1.150 🥈 = 172.500 🥉).",
   "land.yourCoins": "As tuas moedas",
   "land.yours": "Este terreno é teu.",
   "land.yoursInfo": "Semeia e colhe à vontade dentro da tua vedação.",
@@ -363,7 +363,7 @@ export default {
   "msg.tileTaken": "Alguém semeou aí primeiro.",
   "msg.notYourLand": "Este terreno pertence a outra pessoa.",
   "msg.landNotFarmMode": "Este terreno não está em modo Plantação. Muda o ramo para semear.",
-  "msg.notEnoughCoinsLand": "Moedas insuficientes! O terreno custa o equivalente a 10 moedas de ouro (10 🥇 = 100.000 🥉).",
+  "msg.notEnoughCoinsLand": "Moedas insuficientes! O terreno custa o equivalente a 10 moedas de ouro (10 🥇 = 172.500 🥉).",
   "msg.growing": "{crop} de {name}: pronto em {time}",
   "msg.belongsTo": "Este {crop} pertence a {name}. Nada de vandalismo no terreno público!",
   "msg.noSeeds": "Sem sementes de {crop}. Compra no Mercado do Jogo!",

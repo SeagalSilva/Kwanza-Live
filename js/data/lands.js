@@ -2,7 +2,7 @@
 // (x0,y0) = top-left corner. The gate is on the top side. Change prices freely.
 export const LAND_SIZE = 6;
 export const LAND_PRICE_GOLD = 10;
-export const LAND_PRICE_BRONZE_EQUIV = 100_000; // 10 gold = 1,000 silver = 100,000 bronze
+export const LAND_PRICE_BRONZE_EQUIV = 172_500; // 10 gold = 1,150 silver = 172,500 bronze (150 bronze/silver, 115 silver/gold)
 
 export const LANDS = [
   { id: "L1",  x0: 26, y0: 24, priceGold: LAND_PRICE_GOLD, price: LAND_PRICE_GOLD },

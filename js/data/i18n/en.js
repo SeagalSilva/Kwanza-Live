@@ -146,7 +146,7 @@ export default {
   "wal.ppInfo": "Earned by selling harvests and converted to bronze at the Job Center",
   "wal.coinInfo": "Used at the Game Market, Players' Bazaar, and to buy land",
   "wal.exchange": "Exchange coins",
-  "wal.rate": "100 bronze = 1 silver · 100 silver = 1 gold",
+  "wal.rate": "150 bronze → 1 silver · 1 silver → 120 bronze · 115 silver → 1 gold · 1 gold → 95 silver",
 
   // Game market
   "gm.info": "Ripe in {time}s · yields {n}",
@@ -188,7 +188,7 @@ export default {
   "land.title": "Land {id}",
   "land.forSale": "This plot is for sale!",
   "land.perks": "Only you can farm here, raise animals, or run a shop!",
-  "land.coinPriceNote": "Plots cost 10 gold coins (or equivalent in coins: 10 🥇 = 1,000 🥈 = 100,000 🥉).",
+  "land.coinPriceNote": "Plots cost 10 gold coins (or equivalent in coins: 10 🥇 = 1,150 🥈 = 172,500 🥉).",
   "land.yourCoins": "Your coins",
   "land.yours": "This land is yours.",
   "land.yoursInfo": "Plant and harvest freely inside your fence.",
@@ -363,7 +363,7 @@ export default {
   "msg.tileTaken": "Somebody planted there first.",
   "msg.notYourLand": "This land belongs to someone else.",
   "msg.landNotFarmMode": "This plot is not in Farming mode. Switch mode to plant.",
-  "msg.notEnoughCoinsLand": "Insufficient coins! Land costs 10 gold coins equivalent (10 🥇 = 100,000 🥉).",
+  "msg.notEnoughCoinsLand": "Insufficient coins! Land costs 10 gold coins equivalent (10 🥇 = 172,500 🥉).",
   "msg.growing": "{crop} by {name}: ready in {time}",
   "msg.belongsTo": "This {crop} belongs to {name}. No vandalism on public land!",
   "msg.noSeeds": "No {crop} seeds. Buy some at the Game Market!",
