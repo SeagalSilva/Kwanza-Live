@@ -12,6 +12,34 @@ export function isAdminEmail(email) {
   return typeof email === "string" && email.trim().toLowerCase() === ADMIN_EMAIL;
 }
 
+export const MIN_SEED_PACK = 5;
+
+export function createDefaultMarketConfig() {
+  return {
+    corn:      { packPrice: 25,  packSize: 5, yield: 2, sell: 4  },
+    beans:     { packPrice: 40,  packSize: 5, yield: 2, sell: 7  },
+    peanut:    { packPrice: 60,  packSize: 5, yield: 3, sell: 6  },
+    cassava:   { packPrice: 100, packSize: 5, yield: 3, sell: 12 },
+    banana:    { packPrice: 175, packSize: 5, yield: 4, sell: 15 },
+    pineapple: { packPrice: 300, packSize: 5, yield: 4, sell: 28 }
+  };
+}
+
+export function normalizeMarketConfig(loaded) {
+  const def = createDefaultMarketConfig();
+  const src = loaded && typeof loaded === "object" ? loaded : {};
+  const out = {};
+  for (const [id, d] of Object.entries(def)) {
+    const row = src[id] && typeof src[id] === "object" ? src[id] : {};
+    const packPrice = Number.isFinite(Number(row.packPrice)) ? Math.max(1, Math.round(Number(row.packPrice))) : d.packPrice;
+    const packSize = Number.isFinite(Number(row.packSize)) ? Math.max(MIN_SEED_PACK, Math.round(Number(row.packSize))) : d.packSize;
+    const cropYield = Number.isFinite(Number(row.yield)) ? Math.max(1, Math.round(Number(row.yield))) : d.yield;
+    const sell = Number.isFinite(Number(row.sell)) ? Math.max(1, Math.round(Number(row.sell))) : d.sell;
+    out[id] = { packPrice, packSize, yield: cropYield, sell };
+  }
+  return out;
+}
+
 export function createDefaultCityMap(base = null, fallbackCustomLands = []) {
   const defBuildings = {
     workstation: { x: 6, y: 12 },
@@ -68,6 +96,7 @@ function createDefaultData() {
     },
     landOperations: {},
     freeSeedVisits: {},
+    marketConfig: createDefaultMarketConfig(),
     dailyPool: {
       days: {},
       pendingSellTx: {}
@@ -150,6 +179,7 @@ function mergeDefaults(loaded) {
     },
     landOperations: loaded.landOperations && typeof loaded.landOperations === "object" ? loaded.landOperations : {},
     freeSeedVisits: loaded.freeSeedVisits && typeof loaded.freeSeedVisits === "object" ? loaded.freeSeedVisits : {},
+    marketConfig: normalizeMarketConfig(loaded.marketConfig),
     dailyPool: {
       days: dp.days && typeof dp.days === "object" ? dp.days : {},
       pendingSellTx: dp.pendingSellTx && typeof dp.pendingSellTx === "object" ? dp.pendingSellTx : {}

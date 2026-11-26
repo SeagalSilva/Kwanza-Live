@@ -62,7 +62,7 @@ export const CASINO_NPCS = [
     dir: "left",
     look: { skin: 3, hairColor: 2, hairStyle: 2, shirt: 3 },
     lines: ["cas.npcHost1", "cas.npcHost2", "cas.npcHost3", "cas.npcHost4"],
-    offsetMs: 2400
+    offsetMs: 5500
   },
   {
     id: "npc_guard1",
@@ -72,7 +72,7 @@ export const CASINO_NPCS = [
     dir: "down",
     look: { skin: 1, hairColor: 0, hairStyle: 3, shirt: 0 },
     lines: ["cas.npcGuard1_1", "cas.npcGuard1_2", "cas.npcGuard1_3", "cas.npcGuard1_4"],
-    offsetMs: 4800
+    offsetMs: 11000
   },
   {
     id: "npc_guard2",
@@ -82,21 +82,23 @@ export const CASINO_NPCS = [
     dir: "down",
     look: { skin: 3, hairColor: 0, hairStyle: 3, shirt: 0 },
     lines: ["cas.npcGuard2_1", "cas.npcGuard2_2", "cas.npcGuard2_3", "cas.npcGuard2_4"],
-    offsetMs: 7200
+    offsetMs: 16500
   }
 ];
 
-const NPC_CYCLE_MS = 9500;
-const NPC_SHOW_MS = 6000;
+const NPC_CYCLE_MS = 22000;
+const NPC_SHOW_MS = 5500;
 const npcSpeechOverrides = new Map(); // id -> { idx, shownAt }
 
 function getNpcBubble(npc, nowMs) {
   const ov = npcSpeechOverrides.get(npc.id);
   if (ov && nowMs - ov.shownAt < NPC_SHOW_MS) {
-    const remaining = NPC_SHOW_MS - (nowMs - ov.shownAt);
+    const elapsed = nowMs - ov.shownAt;
+    const remaining = NPC_SHOW_MS - elapsed;
+    const alpha = elapsed < 350 ? elapsed / 350 : (remaining < 900 ? remaining / 900 : 1);
     return {
       text: t(npc.lines[ov.idx % npc.lines.length]),
-      alpha: remaining < 900 ? remaining / 900 : 1
+      alpha
     };
   }
   const shifted = nowMs + npc.offsetMs;
@@ -104,9 +106,10 @@ function getNpcBubble(npc, nowMs) {
   const inCycle = shifted % NPC_CYCLE_MS;
   if (inCycle > NPC_SHOW_MS) return null;
   const remaining = NPC_SHOW_MS - inCycle;
+  const alpha = inCycle < 350 ? inCycle / 350 : (remaining < 900 ? remaining / 900 : 1);
   return {
     text: t(npc.lines[cycleIdx % npc.lines.length]),
-    alpha: remaining < 900 ? remaining / 900 : 1
+    alpha
   };
 }
 
@@ -560,30 +563,27 @@ export function renderCasinoRoom(ctx, view, g, drawOtherHelpers) {
   // NPC name tags & overhead speech bubbles (identical style to player chat bubbles)
   const nowTime = Date.now();
   for (const n of CASINO_NPCS) {
-    pill(ctx, n.name, n.x * TILE, n.y * TILE - 44, { size: 9, bg: "rgba(35,15,28,.88)", border: "#e67e22" });
+    pill(ctx, n.name, n.x * TILE, n.y * TILE - 54, { size: 9, bg: "rgba(35,15,28,.88)", border: "#e67e22" });
     const bubble = getNpcBubble(n, nowTime);
     if (bubble) {
-      drawSpeechBubble(ctx, bubble.text, n.x * TILE, n.y * TILE - 53, bubble.alpha);
+      drawSpeechBubble(ctx, bubble.text, n.x * TILE, n.y * TILE - 66, bubble.alpha);
     }
   }
 
-  for (const o of g.others) pill(ctx, o.p.name || "?", o.p.dx * TILE, o.p.dy * TILE - 46, { size: 10 });
-  if (S.profile) {
-    pill(ctx, S.profile.username, g.me.x * TILE, g.me.y * TILE - 46, { size: 11, border: "#f5c518" });
-  }
+  for (const o of g.others) pill(ctx, o.p.name || "?", o.p.dx * TILE, o.p.dy * TILE - 54, { size: 10 });
 
   if (S.chat?.bubbles) {
     for (const o of g.others) {
       const b = S.chat.bubbles.get(o.id);
       if (b && b.expiresAt > nowTime) {
         const rem = b.expiresAt - nowTime;
-        drawSpeechBubble(ctx, b.text, o.p.dx * TILE, o.p.dy * TILE - 54, rem < 1000 ? rem / 1000 : 1);
+        drawSpeechBubble(ctx, b.text, o.p.dx * TILE, o.p.dy * TILE - 65, rem < 1000 ? rem / 1000 : 1);
       }
     }
     const myB = S.chat.bubbles.get(S.uid);
     if (myB && myB.expiresAt > nowTime) {
       const rem = myB.expiresAt - nowTime;
-      drawSpeechBubble(ctx, myB.text, g.me.x * TILE, g.me.y * TILE - 54, rem < 1000 ? rem / 1000 : 1);
+      drawSpeechBubble(ctx, myB.text, g.me.x * TILE, g.me.y * TILE - 48, rem < 1000 ? rem / 1000 : 1);
     }
   }
 

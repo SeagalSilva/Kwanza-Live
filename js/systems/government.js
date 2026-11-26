@@ -7,6 +7,7 @@ import { t } from "../i18n.js";
 import { toast } from "../ui/toast.js";
 import { applyMapConfig } from "../world/map.js";
 import { syncLandsFromServer } from "./lands.js";
+import { syncMarketConfigFromServer } from "./economy.js";
 
 const ADMIN_EMAIL = "seagalsilva@gmail.com";
 
@@ -89,6 +90,7 @@ export function startMapSync() {
   mapSyncTimer = setInterval(() => {
     syncMapFromServer();
     syncLandsFromServer();
+    syncMarketConfigFromServer();
   }, 5000);
 }
 

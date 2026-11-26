@@ -51,7 +51,17 @@ export function startSync(uid) {
                 activeSession: v.ptc.activeSession || null,
                 history: Array.isArray(v.ptc.history) ? v.ptc.history : []
               }
-            : { activeSession: null, history: [] }
+            : { activeSession: null, history: [] },
+          workstation: v.workstation && typeof v.workstation === "object"
+            ? {
+                claimedDailyDates: v.workstation.claimedDailyDates && typeof v.workstation.claimedDailyDates === "object"
+                  ? v.workstation.claimedDailyDates
+                  : {},
+                claimedShiftCycles: v.workstation.claimedShiftCycles && typeof v.workstation.claimedShiftCycles === "object"
+                  ? v.workstation.claimedShiftCycles
+                  : {}
+              }
+            : { claimedDailyDates: {}, claimedShiftCycles: {} }
         };
         emit("save");
       }

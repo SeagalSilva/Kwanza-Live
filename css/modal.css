@@ -74,6 +74,15 @@
   display: inline-block; margin-left: 4px; padding: 1px 6px; border-radius: 99px;
   background: var(--ok); color: #0b1b10; font-size: 11px; font-weight: 800;
 }
+.ws-status-tag {
+  font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px; white-space: nowrap;
+}
+.ws-status-tag.claimed {
+  background: rgba(255, 255, 255, 0.06); color: var(--mut); border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.ws-status-tag.ready {
+  background: rgba(89, 209, 122, 0.16); color: var(--ok); border: 1px solid rgba(89, 209, 122, 0.45);
+}
 
 .cas-wrap { display: flex; flex-direction: column; gap: 7px; }
 .cas-wheels {
@@ -1061,6 +1070,75 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: var(--txt);
 }
+
+/* Game Market Admin Config */
+.gm-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+}
+.gm-admin-card {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gm-admin-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gm-admin-head strong {
+  font-size: 13.5px;
+  color: #fff;
+  flex: 1;
+}
+.gm-admin-grow {
+  font-size: 11px;
+  color: var(--mut);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 7px;
+  border-radius: 8px;
+}
+.gm-admin-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.gm-admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.gm-admin-field span {
+  font-size: 11px;
+  color: var(--mut);
+  line-height: 1.25;
+}
+.gm-admin-field input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #131c17;
+  color: var(--txt);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.gm-admin-field input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.gm-admin-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
 
 
 

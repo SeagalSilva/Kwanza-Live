@@ -8,6 +8,7 @@ import { startSync, stopSync } from "./systems/sync.js";
 import { startChatSync, stopChatSync } from "./systems/chat.js";
 import { syncMapFromServer, startMapSync, stopMapSync } from "./systems/government.js";
 import { syncLandsFromServer } from "./systems/lands.js";
+import { syncMarketConfigFromServer } from "./systems/economy.js";
 import { showScreen } from "./ui/screens.js";
 import { initLogin } from "./ui/login.js";
 import { startOnboarding } from "./ui/onboarding.js";
@@ -37,7 +38,7 @@ function teardown() {
 }
 
 async function enterGame() {
-  await Promise.all([syncMapFromServer(), syncLandsFromServer()]);
+  await Promise.all([syncMapFromServer(), syncLandsFromServer(), syncMarketConfigFromServer()]);
   const hasSave = await startSync(S.uid);
   if (!hasSave) await ensureSave(S.uid);
   await verifyAdExemptionOnLogin(S.uid);

@@ -1,8 +1,20 @@
 import { Router } from "express";
 import crypto from "crypto";
 import { dbState, saveDb } from "../db.js";
-import { getOrUpdateWorkstationUser } from "./workstation.js";
-import { getDailyPoolView, settlePastDailyPools, ensureWorkstationUserRecord } from "../dailyPool.js";
+import {
+  getDailyPoolView,
+  settlePastDailyPools,
+  ensureWorkstationUserRecord,
+  beginDailyPoolClaim,
+  confirmDailyPoolClaim,
+  rollbackDailyPoolClaim
+} from "../services/dailyPool.js";
+import {
+  getOrUpdateWorkstationUser,
+  beginShiftClaim,
+  confirmShiftClaim,
+  rollbackShiftClaim
+} from "../services/workstationShift.js";
 
 const router = Router();
 
@@ -10,7 +22,6 @@ function ensureUserMailbox(uid) {
   if (!dbState.userMail) dbState.userMail = {};
   if (!Array.isArray(dbState.userMail[uid])) {
     dbState.userMail[uid] = [];
-    // Seed welcome post office letter
     dbState.userMail[uid].push({
       id: `welcome_${uid}`,
       type: "system",
@@ -39,22 +50,27 @@ router.get("/inbox/:uid", (req, res) => {
   const uid = String(req.params.uid || "");
   if (!uid) return res.status(400).json({ error: "UID is required" });
 
+  const knownDailyDates = req.query.claimedDates ? String(req.query.claimedDates) : null;
+  const knownShiftCycles = req.query.claimedShifts ? String(req.query.claimedShifts) : null;
+
   settlePastDailyPools();
-  const { state: wsState } = getOrUpdateWorkstationUser(uid);
-  getDailyPoolView(uid);
+  const { state: wsState } = getOrUpdateWorkstationUser(uid, null, knownShiftCycles);
+  const dailyView = getDailyPoolView(uid, Date.now(), knownDailyDates);
   const userRecord = ensureWorkstationUserRecord(uid);
   const customMails = ensureUserMailbox(uid);
 
   const mails = [];
   let totalClaimableBronze = 0;
 
-  // 1. Shift rewards from Workstation 30-min shifts (never expire!)
+  // 1. Shift rewards from Workstation 30-min shifts (only unclaimed cycles!)
   const shiftBronze = wsState.readyToClaimBronze || 0;
   if (shiftBronze > 0) {
     totalClaimableBronze += shiftBronze;
-    const recentShifts = Array.isArray(wsState.history) ? wsState.history.slice(0, 5) : [];
-    const shiftSummary = recentShifts.length > 0
-      ? " Últimos turnos: " + recentShifts.map((h) => `${h.depositedPP} PP → +${h.bronzeEarned} 🥉`).join(" · ") + "."
+    const unclaimedShifts = Array.isArray(wsState.history)
+      ? wsState.history.filter((h) => h && !h.claimed && (h.bronzeEarned || 0) > 0).slice(0, 5)
+      : [];
+    const shiftSummary = unclaimedShifts.length > 0
+      ? " Turnos prontos: " + unclaimedShifts.map((h) => `${h.depositedPP} PP → +${h.bronzeEarned} 🥉`).join(" · ") + "."
       : "";
     mails.push({
       id: `shift_reward_${uid}`,
@@ -66,17 +82,19 @@ router.get("/inbox/:uid", (req, res) => {
       reward: { bronze: shiftBronze },
       claimed: false,
       read: false,
-      createdAt: (recentShifts[0]?.completedAt) || Date.now()
+      createdAt: (unclaimedShifts[0]?.completedAt) || Date.now()
     });
   }
 
-  // 2. Daily Pool rewards (never expire!)
-  const dailyBronze = userRecord.dailyReadyToClaimBronze || 0;
+  // 2. Daily Pool rewards (only unclaimed UTC dates!)
+  const dailyBronze = dailyView.dailyReadyToClaimBronze || 0;
   if (dailyBronze > 0) {
     totalClaimableBronze += dailyBronze;
-    const recentDaily = Array.isArray(userRecord.dailyHistory) ? userRecord.dailyHistory.slice(0, 5) : [];
-    const dailySummary = recentDaily.length > 0
-      ? " Registo recente: " + recentDaily.map((d) => `${d.date} (#${d.rank}: +${d.bronzeEarned} 🥉)`).join(" · ") + "."
+    const unclaimedDaily = Array.isArray(userRecord.dailyHistory)
+      ? userRecord.dailyHistory.filter((d) => d && !d.claimed && (d.bronzeEarned || 0) > 0).slice(0, 5)
+      : [];
+    const dailySummary = unclaimedDaily.length > 0
+      ? " Dias prontos: " + unclaimedDaily.map((d) => `${d.date} (#${d.rank}: +${d.bronzeEarned} 🥉)`).join(" · ") + "."
       : "";
     mails.push({
       id: `daily_pool_${uid}`,
@@ -84,11 +102,11 @@ router.get("/inbox/:uid", (req, res) => {
       sender: "Pool Diária de Kwanza",
       senderIcon: "🏆",
       subject: "Prémio da Pool Diária de Kwanza",
-      body: `Parabéns pela tua participação na Pool Diária! Tens ${dailyBronze} moedas de bronze acumuladas de dias anteriores prontas para levantamento.${dailySummary}`,
+      body: `Parabéns pela tua participação na Pool Diária! Tens ${dailyBronze} moedas de bronze de dias anteriores prontas para levantamento único.${dailySummary}`,
       reward: { bronze: dailyBronze },
       claimed: false,
       read: false,
-      createdAt: (recentDaily[0]?.settledAt) || Date.now()
+      createdAt: (unclaimedDaily[0]?.settledAt) || Date.now()
     });
   }
 
@@ -119,7 +137,6 @@ router.get("/inbox/:uid", (req, res) => {
     mails.push(m);
   }
 
-  // Sort: unclaimed with rewards first, then newest
   mails.sort((a, b) => {
     const aHasReward = a.reward && !a.claimed ? 1 : 0;
     const bHasReward = b.reward && !b.claimed ? 1 : 0;
@@ -138,34 +155,38 @@ router.get("/inbox/:uid", (req, res) => {
 });
 
 router.post("/claim", (req, res) => {
-  const { uid, mailId, claimAll } = req.body || {};
+  const { uid, mailId, claimAll, claimedDailyDates, claimedShiftCycles } = req.body || {};
   if (!uid) return res.status(400).json({ error: "UID is required" });
   const key = String(uid);
 
   settlePastDailyPools();
-  const { state: wsState } = getOrUpdateWorkstationUser(key);
+  const { state: wsState } = getOrUpdateWorkstationUser(key, null, claimedShiftCycles);
   const userRecord = ensureWorkstationUserRecord(key);
   const customMails = ensureUserMailbox(key);
 
   let claimedBronze = 0;
-  let shiftTaken = 0;
-  let dailyTaken = 0;
+  let shiftClaimId = null;
+  let dailyClaimId = null;
+  let claimedDates = [];
+  let claimedShiftCycleIds = [];
   const claimedCustomIds = [];
   const claimedItems = {};
 
   const handleClaimShift = () => {
-    if ((wsState.readyToClaimBronze || 0) > 0) {
-      shiftTaken = wsState.readyToClaimBronze;
-      claimedBronze += shiftTaken;
-      wsState.readyToClaimBronze = 0;
+    const r = beginShiftClaim(key, claimedShiftCycles);
+    if (r.allowed && r.claimedBronze > 0) {
+      claimedBronze += r.claimedBronze;
+      shiftClaimId = r.claimId;
+      claimedShiftCycleIds = r.claimedShiftCycles || [];
     }
   };
 
   const handleClaimDaily = () => {
-    if ((userRecord.dailyReadyToClaimBronze || 0) > 0) {
-      dailyTaken = userRecord.dailyReadyToClaimBronze;
-      claimedBronze += dailyTaken;
-      userRecord.dailyReadyToClaimBronze = 0;
+    const r = beginDailyPoolClaim(key, claimedDailyDates);
+    if (r.allowed && r.claimedBronze > 0) {
+      claimedBronze += r.claimedBronze;
+      dailyClaimId = r.claimId;
+      claimedDates = r.claimedDates || [];
     }
   };
 
@@ -203,15 +224,15 @@ router.post("/claim", (req, res) => {
     const pending = ensurePendingMailClaims();
     pending[claimId] = {
       uid: key,
-      shiftTaken,
-      dailyTaken,
+      status: "pending",
+      shiftClaimId,
+      dailyClaimId,
       claimedCustomIds,
       createdAt: Date.now()
     };
-    // Prune confirmed/stale tracking entries > 30 min
     const cutoff = Date.now() - 30 * 60 * 1000;
     for (const [cid, entry] of Object.entries(pending)) {
-      if (entry.createdAt < cutoff) delete pending[cid];
+      if (entry.status !== "pending" && entry.createdAt < cutoff) delete pending[cid];
     }
   }
 
@@ -222,6 +243,8 @@ router.post("/claim", (req, res) => {
     claimId,
     claimedBronze,
     claimedItems,
+    claimedDates,
+    claimedShiftCycles: claimedShiftCycleIds,
     remainingShiftBronze: wsState.readyToClaimBronze || 0,
     remainingDailyBronze: userRecord.dailyReadyToClaimBronze || 0
   });
@@ -229,8 +252,14 @@ router.post("/claim", (req, res) => {
 
 router.post("/claim-confirm", (req, res) => {
   const { uid, claimId } = req.body || {};
+  const key = String(uid || "");
   const pending = ensurePendingMailClaims();
-  if (claimId && pending[claimId] && pending[claimId].uid === String(uid)) {
+  const entry = claimId && pending[claimId];
+  if (entry && entry.uid === key && entry.status === "pending") {
+    entry.status = "confirmed";
+    entry.updatedAt = Date.now();
+    if (entry.shiftClaimId) confirmShiftClaim(key, entry.shiftClaimId);
+    if (entry.dailyClaimId) confirmDailyPoolClaim(key, entry.dailyClaimId);
     delete pending[claimId];
     saveDb();
   }
@@ -242,17 +271,14 @@ router.post("/claim-rollback", (req, res) => {
   const key = String(uid || "");
   const pending = ensurePendingMailClaims();
   const entry = claimId && pending[claimId];
-  if (entry && entry.uid === key) {
-    const { state: wsState } = getOrUpdateWorkstationUser(key);
-    const userRecord = ensureWorkstationUserRecord(key);
+  if (entry && entry.uid === key && entry.status === "pending") {
+    entry.status = "rolled_back";
+    entry.updatedAt = Date.now();
     const customMails = ensureUserMailbox(key);
 
-    if (entry.shiftTaken > 0) {
-      wsState.readyToClaimBronze = (wsState.readyToClaimBronze || 0) + entry.shiftTaken;
-    }
-    if (entry.dailyTaken > 0) {
-      userRecord.dailyReadyToClaimBronze = (userRecord.dailyReadyToClaimBronze || 0) + entry.dailyTaken;
-    }
+    if (entry.shiftClaimId) rollbackShiftClaim(key, entry.shiftClaimId);
+    if (entry.dailyClaimId) rollbackDailyPoolClaim(key, entry.dailyClaimId);
+
     for (const cid of entry.claimedCustomIds || []) {
       const m = customMails.find((x) => x.id === cid);
       if (m) {

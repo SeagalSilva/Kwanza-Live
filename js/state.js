@@ -5,7 +5,8 @@ const blankSave = () => ({
   wallet: { pp: 0, bronze: 0, silver: 0, gold: 0 },
   inv: {},
   energy: { current: 100, max: 100, lastRegen: Date.now() },
-  adExemptUntil: 0
+  adExemptUntil: 0,
+  workstation: { claimedDailyDates: {}, claimedShiftCycles: {} }
 });
 
 export const S = {

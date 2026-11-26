@@ -254,174 +254,285 @@ function drawAnimalSprite(ctx, type, cx, cy, flip, ready, bob) {
 }
 
 function drawBarnShelter(ctx, l) {
-  const bx = (l.x0 + 1.15) * TILE;
-  const by = (l.y0 + 1.12) * TILE;
-  const bw = 42;
-  const bh = 30;
+  const bx = (l.x0 + 1.1) * TILE;
+  const by = (l.y0 + 1.08) * TILE;
+  const bw = 44;
+  const bh = 32;
+  const depth = 8;
+  const frontW = bw - depth;
   ctx.save();
-  // Shadow
-  ctx.fillStyle = "rgba(0,0,0,0.2)";
-  ctx.fillRect(bx + 2, by + bh - 2, bw, 5);
-  // Timber body
-  ctx.fillStyle = "#8a562d";
-  ctx.fillRect(bx + 2, by + 11, bw - 4, bh - 11);
-  // Open dark archway
-  ctx.fillStyle = "#2f1b0d";
-  ctx.fillRect(bx + 11, by + 16, bw - 22, bh - 16);
-  // Golden hay peeking inside
-  ctx.fillStyle = "#e3b63d";
-  ctx.fillRect(bx + 13, by + bh - 5, bw - 26, 5);
-  // Red shingled roof
-  ctx.fillStyle = "#b83925";
+
+  // Skewed down-right cast shadow
+  ctx.fillStyle = "rgba(8,14,10,0.28)";
   ctx.beginPath();
-  ctx.moveTo(bx - 2, by + 13);
-  ctx.lineTo(bx + bw / 2, by);
-  ctx.lineTo(bx + bw + 2, by + 13);
+  ctx.moveTo(bx + 4, by + bh);
+  ctx.lineTo(bx + bw, by + bh);
+  ctx.lineTo(bx + bw + 8, by + bh + 6);
+  ctx.lineTo(bx + 10, by + bh + 6);
   ctx.closePath();
   ctx.fill();
-  ctx.strokeStyle = "#7a2013";
-  ctx.lineWidth = 1.5;
+
+  // Lit timber front body + stone footing
+  ctx.fillStyle = "#8a562d";
+  ctx.fillRect(bx + 2, by + 12, frontW - 2, bh - 12);
+  ctx.fillStyle = "#6c757d";
+  ctx.fillRect(bx + 2, by + bh - 4, frontW - 2, 4);
+
+  // Shaded right extrusion wall
+  ctx.fillStyle = "#5c361a";
+  ctx.beginPath();
+  ctx.moveTo(bx + frontW, by + 12);
+  ctx.lineTo(bx + bw, by + 6);
+  ctx.lineTo(bx + bw, by + bh - 6);
+  ctx.lineTo(bx + frontW, by + bh);
+  ctx.closePath();
+  ctx.fill();
+
+  // Under-eave shadow
+  ctx.fillStyle = "rgba(0,0,0,0.24)";
+  ctx.fillRect(bx + 2, by + 12, frontW - 2, 3);
+
+  // Deep recessed archway + golden hay inside
+  ctx.fillStyle = "#241409";
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bx + 9, by + 17, frontW - 18, bh - 17, [5, 5, 0, 0]);
+  else ctx.rect(bx + 9, by + 17, frontW - 18, bh - 17);
+  ctx.fill();
+  ctx.fillStyle = "#e3b63d";
+  ctx.fillRect(bx + 11, by + bh - 5, frontW - 22, 4);
+
+  // 2.5D Hipped red shingle roof (front sunlit slope + shaded right hip)
+  ctx.fillStyle = "#c9402b";
+  ctx.beginPath();
+  ctx.moveTo(bx - 2, by + 13);
+  ctx.lineTo(bx + 8, by + 1);
+  ctx.lineTo(bx + frontW - 6, by + 1);
+  ctx.lineTo(bx + frontW + 2, by + 13);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#8c2617";
+  ctx.beginPath();
+  ctx.moveTo(bx + frontW - 6, by + 1);
+  ctx.lineTo(bx + bw + 2, by + 5);
+  ctx.lineTo(bx + bw + 3, by + 8);
+  ctx.lineTo(bx + frontW + 2, by + 13);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = "#f07c65";
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(bx + 8, by + 1);
+  ctx.lineTo(bx + frontW - 6, by + 1);
   ctx.stroke();
+
   ctx.restore();
 }
 
 function drawBulkShopStall(ctx, l, op) {
-  const sx = (l.x0 + 1.28) * TILE;
-  const sy = (l.y0 + 1.78) * TILE;
-  const sw = 110;
-  const sh = 76;
+  const sx = (l.x0 + 1.24) * TILE;
+  const sy = (l.y0 + 1.72) * TILE;
+  const sw = 114;
+  const sh = 78;
+  const depth = 10;
+  const frontW = sw - depth;
 
   ctx.save();
-  // Ground shadow
-  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  // Cast oblique shadow down-right
+  ctx.fillStyle = "rgba(8,14,10,0.28)";
   ctx.beginPath();
-  ctx.ellipse(sx + sw / 2, sy + sh - 3, sw * 0.48, 8, 0, 0, Math.PI * 2);
+  ctx.moveTo(sx + 6, sy + sh - 4);
+  ctx.lineTo(sx + sw, sy + sh - 4);
+  ctx.lineTo(sx + sw + 10, sy + sh + 6);
+  ctx.lineTo(sx + 14, sy + sh + 6);
+  ctx.closePath();
   ctx.fill();
 
-  // Back wooden interior & shelf
+  // Back wooden interior + right shaded extrusion wall
   ctx.fillStyle = "#4d2f18";
-  ctx.fillRect(sx + 8, sy + 16, sw - 16, sh - 24);
+  ctx.fillRect(sx + 8, sy + 16, frontW - 14, sh - 22);
+  ctx.fillStyle = "#36200f";
+  ctx.beginPath();
+  ctx.moveTo(sx + frontW - 6, sy + 16);
+  ctx.lineTo(sx + sw - 2, sy + 9);
+  ctx.lineTo(sx + sw - 2, sy + sh - 13);
+  ctx.lineTo(sx + frontW - 6, sy + sh - 6);
+  ctx.closePath();
+  ctx.fill();
+
   ctx.fillStyle = "#784a25";
-  ctx.fillRect(sx + 12, sy + 24, sw - 24, 6);
+  ctx.fillRect(sx + 12, sy + 24, frontW - 22, 6);
 
   // Wooden support posts
   ctx.fillStyle = "#5c361a";
   ctx.fillRect(sx + 6, sy + 14, 6, sh - 18);
-  ctx.fillRect(sx + sw - 12, sy + 14, 6, sh - 18);
+  ctx.fillRect(sx + frontW - 10, sy + 14, 6, sh - 18);
 
-  // Front wooden counter
+  // 2.5D Front wooden counter with shaded right flank + sunlit top edge
   ctx.fillStyle = "#9c6232";
-  ctx.fillRect(sx + 4, sy + 42, sw - 8, 26);
-  ctx.fillStyle = "#c48449";
-  ctx.fillRect(sx + 2, sy + 39, sw - 4, 7);
-  ctx.strokeStyle = "#523015";
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(sx + 4, sy + 42, sw - 8, 26);
+  ctx.fillRect(sx + 4, sy + 42, frontW - 6, 27);
+  ctx.fillStyle = "#6e431f";
+  ctx.beginPath();
+  ctx.moveTo(sx + frontW - 2, sy + 42);
+  ctx.lineTo(sx + sw - 2, sy + 36);
+  ctx.lineTo(sx + sw - 2, sy + 63);
+  ctx.lineTo(sx + frontW - 2, sy + 69);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#c98b50";
+  ctx.beginPath();
+  ctx.moveTo(sx + 2, sy + 42);
+  ctx.lineTo(sx + 8, sy + 36);
+  ctx.lineTo(sx + sw, sy + 36);
+  ctx.lineTo(sx + frontW - 2, sy + 42);
+  ctx.closePath();
+  ctx.fill();
 
-  // Side crate + grain sack
+  // 3D Side crate + grain sack
   ctx.fillStyle = "#b5783d";
   ctx.fillRect(sx + 10, sy + 52, 16, 15);
+  ctx.fillStyle = "#d99d5e";
+  ctx.fillRect(sx + 10, sy + 49, 16, 3);
   ctx.strokeStyle = "#6e4219";
   ctx.strokeRect(sx + 10, sy + 52, 16, 15);
 
   ctx.fillStyle = "#e6d2a2";
   ctx.beginPath();
-  ctx.ellipse(sx + sw - 17, sy + 61, 8, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(sx + frontW - 15, sy + 61, 8, 7, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Stocked items displayed on counter!
+  // Stocked items displayed on counter
   const stockItems = Object.values(op?.stock || {}).filter((s) => s && s.qty > 0);
   if (stockItems.length > 0) {
     const shown = stockItems.slice(0, 4);
-    const step = (sw - 34) / Math.max(1, shown.length - 1);
+    const step = (frontW - 34) / Math.max(1, shown.length - 1);
     shown.forEach((entry, idx) => {
-      const ix = shown.length === 1 ? sx + sw / 2 : sx + 22 + idx * step;
-      drawEmoji(ctx, itemIcon(entry.item), ix, sy + 35, 13);
+      const ix = shown.length === 1 ? sx + frontW / 2 : sx + 20 + idx * step;
+      drawEmoji(ctx, itemIcon(entry.item), ix, sy + 33, 13);
     });
   } else {
-    // Empty display crate
     ctx.fillStyle = "#8a5a2b";
-    ctx.fillRect(sx + sw / 2 - 12, sy + 31, 24, 9);
+    ctx.fillRect(sx + frontW / 2 - 12, sy + 31, 24, 9);
   }
 
-  // Striped market awning (Toldo da Barraca: Emerald & Cream)
+  // Under-awning shadow
+  ctx.fillStyle = "rgba(0,0,0,0.22)";
+  ctx.fillRect(sx + 4, sy + 18, frontW - 6, 4);
+
+  // Striped 2.5D Market Awning + shaded right roof cap
   const stripes = 8;
-  const stW = sw / stripes;
+  const stW = frontW / stripes;
   for (let i = 0; i < stripes; i++) {
     ctx.fillStyle = i % 2 === 0 ? "#1b8a5a" : "#fff5db";
     ctx.beginPath();
     ctx.moveTo(sx + i * stW, sy + 18);
     ctx.lineTo(sx + (i + 1) * stW, sy + 18);
-    ctx.lineTo(sx + 4 + (i + 1) * ((sw - 8) / stripes), sy + 2);
-    ctx.lineTo(sx + 4 + i * ((sw - 8) / stripes), sy + 2);
+    ctx.lineTo(sx + 4 + (i + 1) * ((frontW - 8) / stripes), sy + 2);
+    ctx.lineTo(sx + 4 + i * ((frontW - 8) / stripes), sy + 2);
     ctx.closePath();
     ctx.fill();
-    // Scalloped front flap
     ctx.beginPath();
     ctx.arc(sx + i * stW + stW / 2, sy + 18, stW / 2, 0, Math.PI);
     ctx.fill();
   }
-  // Roof ridge bar
-  ctx.fillStyle = "#4d2b12";
-  ctx.fillRect(sx + 2, sy, sw - 4, 4);
+  ctx.fillStyle = "#125c3c";
+  ctx.beginPath();
+  ctx.moveTo(sx + frontW - 4, sy + 2);
+  ctx.lineTo(sx + sw, sy - 2);
+  ctx.lineTo(sx + sw + 2, sy + 12);
+  ctx.lineTo(sx + frontW, sy + 18);
+  ctx.closePath();
+  ctx.fill();
 
-  // Small signboard on awning
+  ctx.fillStyle = "#4d2b12";
+  ctx.fillRect(sx + 2, sy, frontW - 4, 4);
+
+  // Signboard on awning
   ctx.fillStyle = "#3a2210";
-  ctx.fillRect(sx + sw / 2 - 22, sy + 5, 44, 12);
+  ctx.fillRect(sx + frontW / 2 - 22, sy + 5, 44, 12);
   ctx.strokeStyle = "#f5c518";
   ctx.lineWidth = 1;
-  ctx.strokeRect(sx + sw / 2 - 22, sy + 5, 44, 12);
+  ctx.strokeRect(sx + frontW / 2 - 22, sy + 5, 44, 12);
   ctx.fillStyle = "#fff5db";
   ctx.font = `700 8px ${UI_FONT}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("🏪 LOJA", sx + sw / 2, sy + 11.5);
+  ctx.fillText("🏪 LOJA", sx + frontW / 2, sy + 11.5);
 
   ctx.restore();
 }
 
 function drawLuckShopStall(ctx, l, op, time) {
-  const sx = (l.x0 + 1.28) * TILE;
-  const sy = (l.y0 + 1.75) * TILE;
-  const sw = 110;
-  const sh = 78;
+  const sx = (l.x0 + 1.24) * TILE;
+  const sy = (l.y0 + 1.7) * TILE;
+  const sw = 114;
+  const sh = 80;
+  const depth = 10;
+  const frontW = sw - depth;
   const hasStock = Object.values(op?.stock || {}).some((s) => s && s.qty > 0);
 
   ctx.save();
-  // Ground shadow
-  ctx.fillStyle = "rgba(0,0,0,0.26)";
+  // Cast oblique shadow down-right
+  ctx.fillStyle = "rgba(8,14,10,0.3)";
   ctx.beginPath();
-  ctx.ellipse(sx + sw / 2, sy + sh - 3, sw * 0.48, 8, 0, 0, Math.PI * 2);
+  ctx.moveTo(sx + 6, sy + sh - 4);
+  ctx.lineTo(sx + sw, sy + sh - 4);
+  ctx.lineTo(sx + sw + 10, sy + sh + 6);
+  ctx.lineTo(sx + 14, sy + sh + 6);
+  ctx.closePath();
   ctx.fill();
 
-  // Velvet curtain backdrop
+  // Velvet curtain backdrop + shaded right extrusion wall
   ctx.fillStyle = "#4a1b6e";
-  ctx.fillRect(sx + 8, sy + 16, sw - 16, sh - 24);
+  ctx.fillRect(sx + 8, sy + 16, frontW - 14, sh - 22);
   ctx.fillStyle = "#642594";
   for (let i = 0; i < 4; i++) {
-    ctx.fillRect(sx + 12 + i * 22, sy + 18, 12, sh - 28);
+    ctx.fillRect(sx + 12 + i * 20, sy + 18, 11, sh - 26);
   }
+  ctx.fillStyle = "#2d0f45";
+  ctx.beginPath();
+  ctx.moveTo(sx + frontW - 6, sy + 16);
+  ctx.lineTo(sx + sw - 2, sy + 9);
+  ctx.lineTo(sx + sw - 2, sy + sh - 13);
+  ctx.lineTo(sx + frontW - 6, sy + sh - 6);
+  ctx.closePath();
+  ctx.fill();
 
   // Gold-trimmed wooden posts
   ctx.fillStyle = "#3b1d0f";
   ctx.fillRect(sx + 6, sy + 14, 6, sh - 18);
-  ctx.fillRect(sx + sw - 12, sy + 14, 6, sh - 18);
+  ctx.fillRect(sx + frontW - 10, sy + 14, 6, sh - 18);
   ctx.fillStyle = "#f5c518";
   ctx.fillRect(sx + 6, sy + 20, 6, 3);
-  ctx.fillRect(sx + sw - 12, sy + 20, 6, 3);
+  ctx.fillRect(sx + frontW - 10, sy + 20, 6, 3);
 
-  // Counter (rich purple & gold)
+  // 2.5D Counter (rich purple & gold)
   ctx.fillStyle = "#5c2485";
-  ctx.fillRect(sx + 4, sy + 42, sw - 8, 26);
+  ctx.fillRect(sx + 4, sy + 42, frontW - 6, 27);
+  ctx.fillStyle = "#3a1457";
+  ctx.beginPath();
+  ctx.moveTo(sx + frontW - 2, sy + 42);
+  ctx.lineTo(sx + sw - 2, sy + 36);
+  ctx.lineTo(sx + sw - 2, sy + 63);
+  ctx.lineTo(sx + frontW - 2, sy + 69);
+  ctx.closePath();
+  ctx.fill();
   ctx.fillStyle = "#f5c518";
-  ctx.fillRect(sx + 2, sy + 39, sw - 4, 6);
+  ctx.beginPath();
+  ctx.moveTo(sx + 2, sy + 42);
+  ctx.lineTo(sx + 8, sy + 36);
+  ctx.lineTo(sx + sw, sy + 36);
+  ctx.lineTo(sx + frontW - 2, sy + 42);
+  ctx.closePath();
+  ctx.fill();
   ctx.strokeStyle = "#f5c518";
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(sx + 4, sy + 42, sw - 8, 26);
+  ctx.lineWidth = 1.4;
+  ctx.strokeRect(sx + 4, sy + 42, frontW - 6, 27);
 
   // Mini spinning luck wheel on counter left
-  const wx = sx + 26;
-  const wy = sy + 33;
+  const wx = sx + 25;
+  const wy = sy + 32;
   ctx.save();
   ctx.translate(wx, wy);
   ctx.rotate(hasStock ? time * 1.4 : 0);
@@ -446,31 +557,44 @@ function drawLuckShopStall(ctx, l, op, time) {
   ctx.restore();
 
   // Mystery prize gift & dice on counter center/right
-  drawEmoji(ctx, "🎁", sx + sw / 2 + 6, sy + 34, 15);
-  drawEmoji(ctx, "🎲", sx + sw - 22, sy + 35, 13);
+  drawEmoji(ctx, "🎁", sx + frontW / 2 + 4, sy + 32, 15);
+  drawEmoji(ctx, "🎲", sx + frontW - 20, sy + 33, 13);
 
-  // Striped Carnival Awning (Purple & Bright Gold)
+  // Under-awning shadow
+  ctx.fillStyle = "rgba(0,0,0,0.24)";
+  ctx.fillRect(sx + 4, sy + 18, frontW - 6, 4);
+
+  // Striped 2.5D Carnival Awning + shaded right roof cap
   const stripes = 8;
-  const stW = sw / stripes;
+  const stW = frontW / stripes;
   for (let i = 0; i < stripes; i++) {
     ctx.fillStyle = i % 2 === 0 ? "#7a2bc2" : "#f5c518";
     ctx.beginPath();
     ctx.moveTo(sx + i * stW, sy + 18);
     ctx.lineTo(sx + (i + 1) * stW, sy + 18);
-    ctx.lineTo(sx + 4 + (i + 1) * ((sw - 8) / stripes), sy + 2);
-    ctx.lineTo(sx + 4 + i * ((sw - 8) / stripes), sy + 2);
+    ctx.lineTo(sx + 4 + (i + 1) * ((frontW - 8) / stripes), sy + 2);
+    ctx.lineTo(sx + 4 + i * ((frontW - 8) / stripes), sy + 2);
     ctx.closePath();
     ctx.fill();
     ctx.beginPath();
     ctx.arc(sx + i * stW + stW / 2, sy + 18, stW / 2, 0, Math.PI);
     ctx.fill();
   }
+  ctx.fillStyle = "#4d177d";
+  ctx.beginPath();
+  ctx.moveTo(sx + frontW - 4, sy + 2);
+  ctx.lineTo(sx + sw, sy - 2);
+  ctx.lineTo(sx + sw + 2, sy + 12);
+  ctx.lineTo(sx + frontW, sy + 18);
+  ctx.closePath();
+  ctx.fill();
+
   ctx.fillStyle = "#f5c518";
-  ctx.fillRect(sx + 2, sy, sw - 4, 4);
+  ctx.fillRect(sx + 2, sy, frontW - 4, 4);
 
   // Twinkling awning lights
   for (let i = 0; i <= 6; i++) {
-    const lx = sx + 8 + i * ((sw - 16) / 6);
+    const lx = sx + 8 + i * ((frontW - 16) / 6);
     const pulse = (Math.sin(time * 6 + i * 1.3 + l.x0) + 1) * 0.5;
     ctx.fillStyle = hasStock
       ? `rgba(255, 245, 170, ${0.45 + pulse * 0.55})`
@@ -482,20 +606,19 @@ function drawLuckShopStall(ctx, l, op, time) {
 
   // Crest sign
   ctx.fillStyle = "#2b1342";
-  ctx.fillRect(sx + sw / 2 - 24, sy + 5, 48, 12);
+  ctx.fillRect(sx + frontW / 2 - 24, sy + 5, 48, 12);
   ctx.strokeStyle = "#f5c518";
   ctx.lineWidth = 1;
-  ctx.strokeRect(sx + sw / 2 - 24, sy + 5, 48, 12);
+  ctx.strokeRect(sx + frontW / 2 - 24, sy + 5, 48, 12);
   ctx.fillStyle = "#f5c518";
   ctx.font = `700 8px ${UI_FONT}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("🎲 SORTE", sx + sw / 2, sy + 11.5);
+  ctx.fillText("🎲 SORTE", sx + frontW / 2, sy + 11.5);
 
-  // Floating sparkle if prizes stocked
   if (hasStock) {
     const floatY = Math.sin(time * 3.5 + l.x0) * 3;
-    drawEmoji(ctx, "✨", sx + sw - 12, sy - 4 + floatY, 11);
+    drawEmoji(ctx, "✨", sx + frontW - 10, sy - 4 + floatY, 11);
   }
 
   ctx.restore();
@@ -515,21 +638,29 @@ export function pushLandEntities(entities, ctx, l, mode, op, time) {
 
     const animalEntries = Object.entries(op?.animals || {});
     if (animalEntries.length === 0) {
-      // Extra spare hay bale so an empty ranch still looks distinctly like a pasture
+      // 2.5D Hay bale with cast shadow and side extrusion
       entities.push({
         y: (l.y0 + 3.6) * TILE,
         draw: () => {
           const hx = (l.x0 + 2.8) * TILE;
           const hy = (l.y0 + 3.2) * TILE;
-          ctx.fillStyle = "rgba(0,0,0,0.18)";
-          ctx.fillRect(hx + 1, hy + 12, 22, 4);
+          ctx.fillStyle = "rgba(8,14,10,0.22)";
+          ctx.fillRect(hx + 3, hy + 12, 24, 5);
+          ctx.fillStyle = "#b88a24";
+          ctx.fillRect(hx + 18, hy - 2, 5, 13);
           ctx.fillStyle = "#d9a938";
-          ctx.fillRect(hx, hy, 22, 13);
-          ctx.fillStyle = "#f2ca52";
-          ctx.fillRect(hx + 1, hy + 1, 20, 7);
-          ctx.fillStyle = "#96611b";
-          ctx.fillRect(hx + 6, hy, 2, 13);
-          ctx.fillRect(hx + 14, hy, 2, 13);
+          ctx.fillRect(hx, hy, 20, 13);
+          ctx.fillStyle = "#f5d362";
+          ctx.beginPath();
+          ctx.moveTo(hx, hy);
+          ctx.lineTo(hx + 5, hy - 4);
+          ctx.lineTo(hx + 23, hy - 4);
+          ctx.lineTo(hx + 20, hy);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "#8a5615";
+          ctx.fillRect(hx + 5, hy, 2, 13);
+          ctx.fillRect(hx + 13, hy, 2, 13);
         }
       });
       return;

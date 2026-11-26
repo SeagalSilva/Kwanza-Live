@@ -48,8 +48,8 @@ const PILLARS = [
   { x: 16, y: 9 }
 ];
 
-const NPC_CYCLE_MS = 9500;
-const NPC_SHOW_MS = 6000;
+const NPC_CYCLE_MS = 22000;
+const NPC_SHOW_MS = 5500;
 const npcSpeechOverrides = new Map();
 
 let actionBusy = false;
@@ -73,10 +73,12 @@ function pushFloater(x, y, text, color = "#ffffff") {
 function getNpcBubble(npc, nowMs) {
   const ov = npcSpeechOverrides.get(npc.id);
   if (ov && nowMs - ov.shownAt < NPC_SHOW_MS) {
-    const remaining = NPC_SHOW_MS - (nowMs - ov.shownAt);
+    const elapsed = nowMs - ov.shownAt;
+    const remaining = NPC_SHOW_MS - elapsed;
+    const alpha = elapsed < 350 ? elapsed / 350 : (remaining < 900 ? remaining / 900 : 1);
     return {
       text: t(npc.lines[ov.idx % npc.lines.length]),
-      alpha: remaining < 900 ? remaining / 900 : 1
+      alpha
     };
   }
   const shifted = nowMs + npc.offsetMs;
@@ -84,9 +86,10 @@ function getNpcBubble(npc, nowMs) {
   const inCycle = shifted % NPC_CYCLE_MS;
   if (inCycle > NPC_SHOW_MS) return null;
   const remaining = NPC_SHOW_MS - inCycle;
+  const alpha = inCycle < 350 ? inCycle / 350 : (remaining < 900 ? remaining / 900 : 1);
   return {
     text: t(npc.lines[cycleIdx % npc.lines.length]),
-    alpha: remaining < 900 ? remaining / 900 : 1
+    alpha
   };
 }
 
@@ -402,17 +405,19 @@ export function focusLabelDungeon(f) {
   return null;
 }
 
+function countBagSeeds(loot) {
+  if (!loot?.seeds) return 0;
+  let total = 0;
+  for (const qty of Object.values(loot.seeds)) total += Number(qty) || 0;
+  return total;
+}
+
 function formatLootList(loot) {
   if (!loot) return [];
   const msgs = [];
   if (loot.pp > 0) msgs.push(`+${loot.pp} PP`);
-  if (loot.bronze > 0) msgs.push(`+${loot.bronze} 🥉`);
-  if (loot.silver > 0) msgs.push(`+${loot.silver} 🥈`);
-  if (loot.seeds) {
-    let seedTotal = 0;
-    for (const qty of Object.values(loot.seeds)) seedTotal += Number(qty) || 0;
-    if (seedTotal > 0) msgs.push(`+${seedTotal} ${t("dun.seedWord")}`);
-  }
+  const seedTotal = countBagSeeds(loot);
+  if (seedTotal > 0) msgs.push(`+${seedTotal} ${t("dun.seedWord")}`);
   return msgs;
 }
 
@@ -421,8 +426,6 @@ async function applyLootToFirebase(loot) {
   const updates = {};
 
   if (loot.pp > 0) updates[savePath(S.uid, "wallet/pp")] = increment(loot.pp);
-  if (loot.bronze > 0) updates[savePath(S.uid, "wallet/bronze")] = increment(loot.bronze);
-  if (loot.silver > 0) updates[savePath(S.uid, "wallet/silver")] = increment(loot.silver);
   if (loot.seeds) {
     for (const [seedId, qty] of Object.entries(loot.seeds)) {
       if (qty > 0) updates[savePath(S.uid, `inv/${seedId}`)] = increment(qty);
@@ -831,14 +834,6 @@ export function tickDungeonPending(me, handleLeaveDungeon) {
 }
 
 const UI_FONT = "system-ui,-apple-system,Segoe UI,Roboto,sans-serif";
-const EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
-
-function drawEmoji(ctx, ch, x, y, size) {
-  ctx.font = `${size}px ${EMOJI}`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(ch, x, y);
-}
 
 function drawCharacterNameTag(ctx, text, cx, y, border = null) {
   ctx.save();
@@ -862,6 +857,306 @@ function drawCharacterNameTag(ctx, text, cx, y, border = null) {
   ctx.restore();
 }
 
+function drawDungeonArchitecture(ctx, nowSec) {
+  const worldW = DUNGEON_W * TILE, worldH = DUNGEON_H * TILE;
+
+  // 1. Interior mossy glade & beveled central stone causeway
+  for (let ty = 1; ty < DUNGEON_H - 1; ty++) {
+    for (let tx = 1; tx < DUNGEON_W - 1; tx++) {
+      const x = tx * TILE, y = ty * TILE;
+      const isStonePath = tx >= 10 && tx <= 11 && ty >= 2;
+      if (isStonePath) {
+        ctx.fillStyle = (tx + ty) % 2 ? "#4b584d" : "#424e44";
+        ctx.fillRect(x, y, TILE, TILE);
+        // Flagstone top highlight & bottom bevel
+        ctx.fillStyle = "rgba(255,255,255,0.08)";
+        ctx.fillRect(x + 2, y + 2, TILE - 4, 3);
+        ctx.fillStyle = "rgba(0,0,0,0.22)";
+        ctx.fillRect(x + 1, y + TILE - 3, TILE - 2, 2);
+        ctx.strokeStyle = "rgba(16,28,18,0.35)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 1.5, y + 1.5, TILE - 3, TILE - 3);
+      } else {
+        ctx.fillStyle = (tx + ty) % 2 ? "#214229" : "#1d3b25";
+        ctx.fillRect(x, y, TILE, TILE);
+        if ((tx * 11 + ty * 17) % 7 === 0) {
+          ctx.fillStyle = "rgba(120, 220, 140, 0.14)";
+          ctx.beginPath();
+          ctx.arc(x + 12, y + 16, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+  }
+
+  // 2. 2.5D North Ancient Temple Wall (ty = 0): top sunlit stone parapet + front chiseled blocks + floor shadow
+  ctx.fillStyle = "#132418";
+  ctx.fillRect(0, 0, worldW, TILE);
+  ctx.fillStyle = "#4d5e52";
+  ctx.fillRect(TILE * 0.5, 4, worldW - TILE, 11);
+  const wallGrad = ctx.createLinearGradient(0, 15, 0, TILE + 4);
+  wallGrad.addColorStop(0, "#38473c");
+  wallGrad.addColorStop(1, "#253028");
+  ctx.fillStyle = wallGrad;
+  ctx.fillRect(0, 15, worldW, TILE - 11);
+
+  // Masonry brick seams + hanging moss
+  ctx.strokeStyle = "rgba(0,0,0,0.28)";
+  ctx.lineWidth = 1;
+  for (let tx = 1; tx < DUNGEON_W - 1; tx++) {
+    const x = tx * TILE;
+    ctx.strokeRect(x, 15, TILE, TILE - 11);
+    if (tx % 2 === 0) {
+      ctx.fillStyle = "#2e7d32";
+      ctx.fillRect(x + 4, 12, 14, 6);
+      ctx.fillRect(x + 7, 18, 4, 7);
+    }
+  }
+
+  // Heavy wall shadow cast onto row ty = 1
+  const nShadow = ctx.createLinearGradient(0, TILE + 4, 0, TILE * 1.55);
+  nShadow.addColorStop(0, "rgba(0,0,0,0.44)");
+  nShadow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = nShadow;
+  ctx.fillRect(TILE, TILE + 4, worldW - TILE * 2, TILE * 0.55);
+
+  // Twin glowing north wall torch sconces flanking portal
+  for (const bx of [8.5 * TILE, 13.5 * TILE]) {
+    const by = 22;
+    const flick = 0.8 + Math.sin(nowSec * 8 + bx) * 0.18;
+    const tGrad = ctx.createRadialGradient(bx, by + 6, 2, bx, by + 10, 38);
+    tGrad.addColorStop(0, `rgba(255, 190, 75, ${(0.3 * flick).toFixed(2)})`);
+    tGrad.addColorStop(1, "rgba(255, 150, 30, 0)");
+    ctx.fillStyle = tGrad;
+    ctx.beginPath(); ctx.arc(bx, by + 10, 38, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#4d311c"; ctx.fillRect(bx - 2, by, 4, 9);
+    ctx.fillStyle = "#ffca28"; ctx.beginPath(); ctx.arc(bx, by - 1, 3.6 * flick, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // 3. Side & Bottom Forest Ruin Canopy Borders + Exits
+  for (let ty = 0; ty < DUNGEON_H; ty++) {
+    for (let tx = 0; tx < DUNGEON_W; tx++) {
+      const isBorder = tx === 0 || tx === DUNGEON_W - 1 || ty === DUNGEON_H - 1;
+      if (!isBorder) continue;
+      const x = tx * TILE, y = ty * TILE;
+      const isExitDoor = ty === DUNGEON_H - 1 && (tx === 10 || tx === 11);
+      if (isExitDoor) continue;
+
+      ctx.fillStyle = "#102417";
+      ctx.fillRect(x, y, TILE, TILE);
+      // 3-tone 2.5D perimeter tree crown
+      ctx.fillStyle = "#173b23";
+      ctx.beginPath(); ctx.arc(x + TILE / 2 + 2, y + TILE / 2 + 2, TILE * 0.48, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = (tx + ty) % 2 ? "#215430" : "#276138";
+      ctx.beginPath(); ctx.arc(x + TILE / 2, y + TILE / 2, TILE * 0.44, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#357d49";
+      ctx.beginPath(); ctx.arc(x + TILE / 2 - 4, y + TILE / 2 - 4, TILE * 0.24, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // Sunlit Exit Gateway at bottom-center (tx = 10..11)
+  const exX = 10 * TILE, exY = (DUNGEON_H - 1) * TILE;
+  ctx.fillStyle = "#5c4a36";
+  ctx.fillRect(exX, exY, 2 * TILE, TILE);
+  const exGlow = ctx.createLinearGradient(0, exY - 12, 0, exY + TILE);
+  exGlow.addColorStop(0, "rgba(245, 197, 24, 0)");
+  exGlow.addColorStop(1, "rgba(245, 197, 24, 0.34)");
+  ctx.fillStyle = exGlow;
+  ctx.fillRect(exX, exY - 12, 2 * TILE, TILE + 12);
+  // Carved exit stone pillars
+  ctx.fillStyle = "#57685b";
+  ctx.fillRect(exX - 5, exY - 6, 8, TILE + 6);
+  ctx.fillRect(exX + 2 * TILE - 3, exY - 6, 8, TILE + 6);
+}
+
+function draw3DSpringFountain(ctx, sx, sy, active, nowSec) {
+  ctx.save();
+  // Cast down-right shadow
+  ctx.fillStyle = "rgba(0,0,0,0.34)";
+  ctx.beginPath();
+  ctx.ellipse(sx + 4, sy + 5, 22, 13, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Outer carved stone basin rim (shaded lower half, lit upper lip)
+  ctx.fillStyle = "#3d4a41";
+  ctx.beginPath(); ctx.ellipse(sx, sy + 4, 21, 13, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#697c6f";
+  ctx.beginPath(); ctx.ellipse(sx, sy, 21, 12.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#263029";
+  ctx.beginPath(); ctx.ellipse(sx, sy + 1, 16, 9, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Luminous turquoise water surface + animated ripple
+  const wGrad = ctx.createRadialGradient(sx - 3, sy - 1, 2, sx, sy + 1, 16);
+  if (active) {
+    wGrad.addColorStop(0, "#7df9d6");
+    wGrad.addColorStop(1, "#0e8a72");
+  } else {
+    wGrad.addColorStop(0, "#506660");
+    wGrad.addColorStop(1, "#2f3d39");
+  }
+  ctx.fillStyle = wGrad;
+  ctx.beginPath(); ctx.ellipse(sx, sy + 1.5, 15, 8.5, 0, 0, Math.PI * 2); ctx.fill();
+
+  if (active) {
+    const rip = (nowSec * 0.9) % 1;
+    ctx.strokeStyle = `rgba(210, 255, 240, ${(1 - rip) * 0.65})`;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.ellipse(sx, sy + 1, 3 + rip * 11, 1.8 + rip * 6, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Small mossy spout pedestal in back center
+    ctx.fillStyle = "#778a7d";
+    ctx.fillRect(sx - 3, sy - 11, 6, 9);
+    ctx.fillStyle = "#7df9d6";
+    ctx.fillRect(sx - 1, sy - 5, 2, 6);
+  }
+  ctx.restore();
+}
+
+function draw3DPortalArchway(ctx, px, py, open, isBossFloor, nowSec) {
+  ctx.save();
+  // Cast shadow
+  ctx.fillStyle = "rgba(0,0,0,0.36)";
+  ctx.beginPath(); ctx.ellipse(px + 4, py + 8, 28, 12, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Stepped circular stone dais
+  ctx.fillStyle = "#3f4d43";
+  ctx.beginPath(); ctx.ellipse(px, py + 7, 26, 11, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#5a6e60";
+  ctx.beginPath(); ctx.ellipse(px, py + 4, 23, 9.5, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Twin 2.5D stone obelisk pillars
+  for (const side of [-1, 1]) {
+    const ox = px + side * 20 - 4;
+    ctx.fillStyle = "#5b6e61";
+    ctx.fillRect(ox, py - 24, 7, 28);
+    ctx.fillStyle = "#36453a";
+    ctx.fillRect(ox + 6, py - 24, 3, 28);
+    ctx.fillStyle = open ? (isBossFloor ? "#f5c518" : "#59d17a") : "#49564e";
+    ctx.fillRect(ox + 2, py - 18, 2, 12);
+  }
+
+  // Carved arch lintel connecting obelisks
+  ctx.fillStyle = "#6c8072";
+  ctx.fillRect(px - 22, py - 28, 44, 7);
+  ctx.fillStyle = "#46574b";
+  ctx.fillRect(px - 22, py - 23, 44, 3);
+
+  // Swirling portal vortex inside arch
+  if (open) {
+    const pulse = 0.72 + Math.sin(nowSec * 4) * 0.25;
+    const vGrad = ctx.createRadialGradient(px, py - 8, 2, px, py - 8, 18);
+    vGrad.addColorStop(0, isBossFloor ? "#fff6b0" : "#b9ffcf");
+    vGrad.addColorStop(0.55, isBossFloor ? `rgba(245,197,24,${0.8 * pulse})` : `rgba(89,209,122,${0.8 * pulse})`);
+    vGrad.addColorStop(1, "rgba(10,30,18,0.1)");
+    ctx.fillStyle = vGrad;
+    ctx.beginPath();
+    ctx.ellipse(px, py - 8, 14, 15, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const spin = nowSec * 3;
+    ctx.strokeStyle = isBossFloor ? "#fff3a6" : "#a8ffca";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(px, py - 8, 11, spin, spin + Math.PI * 1.2);
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = "#16211a";
+    ctx.beginPath();
+    ctx.ellipse(px, py - 8, 13, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#46574c";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function draw3DRuinPillar(ctx, x, y) {
+  ctx.save();
+  // Diagonal cast shadow down-right
+  ctx.fillStyle = "rgba(0,0,0,0.34)";
+  ctx.beginPath();
+  ctx.moveTo(x + 8, y + TILE - 4);
+  ctx.lineTo(x + TILE - 6, y + TILE - 4);
+  ctx.lineTo(x + TILE + 5, y + TILE + 4);
+  ctx.lineTo(x + 16, y + TILE + 4);
+  ctx.closePath();
+  ctx.fill();
+
+  // Stepped base plinth
+  ctx.fillStyle = "#3a483e";
+  ctx.fillRect(x + 5, y + TILE - 9, TILE - 10, 6);
+  // Lit front stone shaft
+  ctx.fillStyle = "#5c7062";
+  ctx.fillRect(x + 7, y + 6, TILE - 18, TILE - 14);
+  // Shaded right stone bevel
+  ctx.fillStyle = "#36453b";
+  ctx.fillRect(x + TILE - 11, y + 4, 5, TILE - 12);
+  // Top sunlit slab + mossy crown
+  ctx.fillStyle = "#778c7e";
+  ctx.fillRect(x + 6, y + 1, TILE - 12, 6);
+  ctx.fillStyle = "#2e7d32";
+  ctx.fillRect(x + 7, y + 1, 11, 5);
+  // Subtle carved emerald rune vertical groove
+  ctx.fillStyle = "rgba(89, 209, 122, 0.45)";
+  ctx.fillRect(x + 12, y + 11, 2, 10);
+  ctx.restore();
+}
+
+function draw3DTreasureChest(ctx, rx, ry, opened, unlocked, nowSec) {
+  const cx = rx + TILE / 2;
+  const cy = ry + TILE / 2 + 2;
+  ctx.save();
+
+  if (!opened && unlocked) {
+    const glow = 0.25 + Math.sin(nowSec * 5) * 0.14;
+    ctx.fillStyle = `rgba(245, 197, 24, ${glow})`;
+    ctx.beginPath();
+    ctx.arc(cx, cy - 2, 21, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Cast shadow
+  ctx.fillStyle = "rgba(0,0,0,0.36)";
+  ctx.beginPath();
+  ctx.ellipse(cx + 2, cy + 10, 14, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const trim = unlocked ? "#f5c518" : "#8c969c";
+  // Chest wooden base + shaded right side
+  ctx.fillStyle = "#7a441e";
+  ctx.fillRect(cx - 12, cy - 2, 20, 12);
+  ctx.fillStyle = "#4f2a10";
+  ctx.fillRect(cx + 8, cy - 4, 5, 12);
+  // Metal straps
+  ctx.fillStyle = trim;
+  ctx.fillRect(cx - 12, cy - 2, 20, 2.5);
+  ctx.fillRect(cx - 8, cy - 2, 3, 12);
+  ctx.fillRect(cx + 3, cy - 2, 3, 12);
+
+  if (opened) {
+    // Open tilted back lid + empty dark interior
+    ctx.fillStyle = "#241307";
+    ctx.fillRect(cx - 10, cy - 5, 16, 4);
+    ctx.fillStyle = "#5c3214";
+    ctx.fillRect(cx - 12, cy - 13, 21, 7);
+    ctx.fillStyle = trim;
+    ctx.fillRect(cx - 12, cy - 13, 21, 2);
+  } else {
+    // Domed 3D lid + center clasp lock
+    ctx.fillStyle = "#9c5928";
+    ctx.fillRect(cx - 12, cy - 9, 20, 7);
+    ctx.fillStyle = "#613515";
+    ctx.fillRect(cx + 8, cy - 11, 5, 7);
+    ctx.fillStyle = trim;
+    ctx.fillRect(cx - 3, cy - 4, 4, 5);
+  }
+
+  ctx.restore();
+}
+
 export function renderDungeonRoom(ctx, view, g, { sanitizeLook }) {
   const { cw, ch, zoom, dpr } = view;
   const vw = cw / zoom, vh = ch / zoom;
@@ -882,120 +1177,31 @@ export function renderDungeonRoom(ctx, view, g, { sanitizeLook }) {
   const nowSec = g.time;
   const nowMs = Date.now();
 
-  // Forest clearing tiles
-  for (let ty = 0; ty < DUNGEON_H; ty++) {
-    for (let tx = 0; tx < DUNGEON_W; tx++) {
-      const x = tx * TILE, y = ty * TILE;
-      const isExitDoor = ty === DUNGEON_H - 1 && (tx === 10 || tx === 11);
-      const border = tx === 0 || ty === 0 || tx === DUNGEON_W - 1 || ty === DUNGEON_H - 1;
+  drawDungeonArchitecture(ctx, nowSec);
 
-      if (border) {
-        if (isExitDoor) {
-          ctx.fillStyle = "#5a4632";
-          ctx.fillRect(x, y, TILE, TILE);
-        } else {
-          ctx.fillStyle = "#112819";
-          ctx.fillRect(x, y, TILE, TILE);
-          ctx.fillStyle = (tx + ty) % 2 ? "#1b4328" : "#225332";
-          ctx.beginPath();
-          ctx.arc(x + TILE / 2, y + TILE / 2, TILE * 0.48, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      } else {
-        const isStonePath = tx >= 10 && tx <= 11 && ty >= 2;
-        if (isStonePath) {
-          ctx.fillStyle = (tx + ty) % 2 ? "#465047" : "#3f4940";
-          ctx.fillRect(x, y, TILE, TILE);
-          ctx.strokeStyle = "rgba(0,0,0,0.16)";
-          ctx.lineWidth = 1;
-          ctx.strokeRect(x + 1, y + 1, TILE - 2, TILE - 2);
-        } else {
-          ctx.fillStyle = (tx + ty) % 2 ? "#214229" : "#1d3b25";
-          ctx.fillRect(x, y, TILE, TILE);
-          if ((tx * 11 + ty * 17) % 7 === 0) {
-            ctx.fillStyle = "rgba(120, 220, 140, 0.14)";
-            ctx.beginPath();
-            ctx.arc(x + 12, y + 16, 2, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        }
-      }
-    }
-  }
+  // 2.5D Healing Spring of the Forest (1x per floor)
+  draw3DSpringFountain(ctx, DUNGEON_SPRING.x * TILE, DUNGEON_SPRING.y * TILE, !!(run && !run.springUsed), nowSec);
 
-  // Healing Spring of the Forest (1x per floor)
-  {
-    const sx = DUNGEON_SPRING.x * TILE, sy = DUNGEON_SPRING.y * TILE;
-    const active = run && !run.springUsed;
-    const pulse = 0.6 + Math.sin(nowSec * 3.5) * 0.25;
-    ctx.fillStyle = active ? `rgba(52, 211, 153, ${0.22 * pulse})` : "rgba(60, 80, 75, 0.2)";
-    ctx.beginPath();
-    ctx.arc(sx, sy, 26, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = active ? "#1abc9c" : "#445c56";
-    ctx.beginPath();
-    ctx.ellipse(sx, sy + 2, 16, 11, 0, 0, Math.PI * 2);
-    ctx.fill();
-    drawEmoji(ctx, active ? "💧" : "🪨", sx, sy - 2, 20);
-  }
-
-  // Next Floor / Completion Portal at top-center
-  {
-    const px = DUNGEON_PORTAL.x * TILE, py = DUNGEON_PORTAL.y * TILE;
-    const open = !!run?.cleared;
-    const spin = nowSec * 2.5;
-    ctx.fillStyle = open ? "rgba(89, 209, 122, 0.26)" : "rgba(120, 130, 125, 0.18)";
-    ctx.beginPath();
-    ctx.ellipse(px, py + 4, 24, 15, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = open ? "#59d17a" : "#708078";
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.arc(px, py, 16, spin, spin + Math.PI * 1.4);
-    ctx.stroke();
-    drawEmoji(ctx, open ? (run?.isBossFloor ? "🏆" : "🌀") : "🔒", px, py, 22);
-  }
-
-  // Bottom Exit sign highlight
-  ctx.fillStyle = "rgba(245, 197, 24, 0.18)";
-  ctx.fillRect(10 * TILE, (DUNGEON_H - 1.05) * TILE, 2 * TILE, TILE);
-  drawEmoji(ctx, "🚪", 11 * TILE, (DUNGEON_H - 0.5) * TILE, 18);
+  // 2.5D Next Floor / Completion Portal at top-center
+  draw3DPortalArchway(ctx, DUNGEON_PORTAL.x * TILE, DUNGEON_PORTAL.y * TILE, !!run?.cleared, !!run?.isBossFloor, nowSec);
 
   const entities = [];
 
-  // Stone Moss Pillars
+  // 2.5D Stone Moss Pillars
   for (const p of PILLARS) {
     entities.push({
       y: (p.y + 1) * TILE,
-      draw: () => {
-        const x = p.x * TILE, y = p.y * TILE;
-        ctx.fillStyle = "rgba(0,0,0,0.3)";
-        ctx.beginPath();
-        ctx.ellipse(x + TILE / 2, y + TILE - 3, 13, 5, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#4d5e53";
-        ctx.fillRect(x + 7, y + 6, TILE - 14, TILE - 10);
-        ctx.fillStyle = "#2e7d32";
-        ctx.fillRect(x + 7, y + 4, TILE - 14, 7);
-      }
+      draw: () => draw3DRuinPillar(ctx, p.x * TILE, p.y * TILE)
     });
   }
 
-  // Treasure Chest
+  // 2.5D Treasure Chest
   if (run?.chest) {
     const chObj = run.chest;
     const rx = chObj.x * TILE, ry = chObj.y * TILE;
     entities.push({
       y: (chObj.y + 1) * TILE,
-      draw: () => {
-        if (!chObj.opened && run.cleared) {
-          ctx.fillStyle = `rgba(245, 197, 24, ${0.22 + Math.sin(nowSec * 5) * 0.12})`;
-          ctx.beginPath();
-          ctx.arc(rx + TILE / 2, ry + TILE / 2, 22, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        drawEmoji(ctx, chObj.opened ? "📭" : (run.cleared ? "🎁" : "🧰"), rx + TILE / 2, ry + TILE / 2, 26);
-      }
+      draw: () => draw3DTreasureChest(ctx, rx, ry, chObj.opened, !!run.cleared, nowSec)
     });
   }
 
@@ -1091,7 +1297,7 @@ export function renderDungeonRoom(ctx, view, g, { sanitizeLook }) {
 
   for (const drop of S.dungeon?.floorDrops || []) {
     const b = drop.bag || {};
-    const label = `💀 ${drop.victimName} (${b.bronze || 0}🥉 · ${b.pp || 0}PP)`;
+    const label = `💀 ${drop.victimName} (${b.pp || 0}PP · ${countBagSeeds(b)}🌱)`;
     const isMine = String(drop.victimUid) === String(S.uid);
     drawCharacterNameTag(ctx, label, drop.x * TILE, drop.y * TILE - 25, isMine ? "#d9534f" : "#f5c518");
   }
@@ -1113,21 +1319,20 @@ export function renderDungeonRoom(ctx, view, g, { sanitizeLook }) {
   }
 
   for (const npc of DUNGEON_NPCS) {
-    drawCharacterNameTag(ctx, npc.name, npc.x * TILE, npc.y * TILE - 32, "#59d17a");
+    drawCharacterNameTag(ctx, npc.name, npc.x * TILE, npc.y * TILE - 54, "#59d17a");
     const bubble = getNpcBubble(npc, nowMs);
     if (bubble) {
-      drawSpeechBubble(ctx, bubble.text, npc.x * TILE, npc.y * TILE - 42, bubble.alpha);
+      drawSpeechBubble(ctx, bubble.text, npc.x * TILE, npc.y * TILE - 66, bubble.alpha);
     }
   }
 
   for (const o of g.others) {
     if ((o.p.room || "world") !== "dungeon") continue;
-    drawCharacterNameTag(ctx, o.p.name || "?", o.p.dx * TILE, o.p.dy * TILE - 32);
+    drawCharacterNameTag(ctx, o.p.name || "?", o.p.dx * TILE, o.p.dy * TILE - 54);
   }
 
-  drawCharacterNameTag(ctx, S.profile?.username || "", g.me.x * TILE, g.me.y * TILE - 32, "#f5c518");
   if (run) {
-    drawPlayerDungeonHpBar(ctx, g.me.x * TILE, g.me.y * TILE - 51, run.hp, run.maxHp);
+    drawPlayerDungeonHpBar(ctx, g.me.x * TILE, g.me.y * TILE - 53, run.hp, run.maxHp);
   }
 
   // Combat floaters
@@ -1158,7 +1363,7 @@ export function renderDungeonRoom(ctx, view, g, { sanitizeLook }) {
     const floorName = lang === "en" ? run.floorNameEn : run.floorNamePt;
     const aliveCount = (run.enemies || []).filter((e) => e.hp > 0).length;
     const bag = run.bag || {};
-    const bagTxt = `🎒 ${bag.bronze || 0}🥉 ${bag.pp || 0}PP${bag.silver ? ` ${bag.silver}🥈` : ""}`;
+    const bagTxt = `🎒 ${bag.pp || 0}PP · ${countBagSeeds(bag)}🌱`;
     const label = `🌲 ${phaseName} · ${t("dun.floorShort", { n: run.floor, total: run.totalFloors })} (${floorName}) · ❤️ ${run.hp}/${run.maxHp} · 👾 ${aliveCount} · ${bagTxt}`;
 
     ctx.font = `700 12px ${UI_FONT}`;

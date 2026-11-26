@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { dbState, saveDb } from "../db.js";
-import { recordDailyPoints } from "../dailyPool.js";
+import { recordDailyPoints } from "../services/dailyPool.js";
 import {
   DUNGEON_PHASES,
   getPhaseConfig,

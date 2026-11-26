@@ -1,15 +1,15 @@
 import { Router } from "express";
 import { dbState, saveDb } from "../db.js";
-import { recordDailyPoints } from "../dailyPool.js";
+import { recordDailyPoints } from "../services/dailyPool.js";
 
 const router = Router();
 
-// Rock tiers configuration:
-// - common: cost 1 energy, 1-3 hits. Loot: 1-10 PP OR up to 1 bronze.
-// - uncommon: cost 1 energy, 1-4 hits. Loot: 5-20 PP AND 2-5 bronze.
-// - rare: cost 1 energy, 2-5 hits. Loot: 25-50 PP, 1 random seed AND 5-10 bronze.
-// - epic: cost 2 energy, 4-5 hits. Loot: 100-250 PP, 3 random seeds AND 25-55 bronze.
-// - legendary: cost 3 energy, 4-5 hits. Loot: 300-500 PP, 10 random seeds, 60-95 bronze AND 1-2 silver.
+// Rock tiers configuration (ONLY Pool Points and seeds):
+// - common: cost 3 energy, 1-3 hits. Loot: 2-10 PP and 35% chance of 1 random seed.
+// - uncommon: cost 5 energy, 1-4 hits. Loot: 8-22 PP and 1 random seed.
+// - rare: cost 7 energy, 2-5 hits. Loot: 25-55 PP and 2 random seeds.
+// - epic: cost 10 energy, 4-5 hits. Loot: 100-250 PP and 4 random seeds.
+// - legendary: cost 15 energy, 4-5 hits. Loot: 300-500 PP and 10 random seeds.
 
 const CROP_IDS = ["corn", "beans", "peanut", "cassava", "banana", "pineapple"];
 const SEED_MAP = {
@@ -22,11 +22,11 @@ const SEED_MAP = {
 };
 
 const ROCK_CONFIGS = {
-  common:    { name: "Comum", cost: 1, minHits: 1, maxHits: 3, emoji: "🪨" },
-  uncommon:  { name: "Incomum", cost: 1, minHits: 1, maxHits: 4, emoji: "🗿" },
-  rare:      { name: "Rara", cost: 1, minHits: 2, maxHits: 5, emoji: "💎" },
-  epic:      { name: "Épica", cost: 2, minHits: 4, maxHits: 5, emoji: "🔮" },
-  legendary: { name: "Lendária", cost: 3, minHits: 4, maxHits: 5, emoji: "🌟" }
+  common:    { name: "Comum", cost: 3, minHits: 1, maxHits: 3, emoji: "🪨" },
+  uncommon:  { name: "Incomum", cost: 5, minHits: 1, maxHits: 4, emoji: "🗿" },
+  rare:      { name: "Rara", cost: 7, minHits: 2, maxHits: 5, emoji: "💎" },
+  epic:      { name: "Épica", cost: 10, minHits: 4, maxHits: 5, emoji: "🔮" },
+  legendary: { name: "Lendária", cost: 15, minHits: 4, maxHits: 5, emoji: "🌟" }
 };
 
 const INITIAL_ROCKS_COUNT = 14;
@@ -55,7 +55,8 @@ function createRock(id) {
     maxHp,
     x: randomInt(2, 22),
     y: randomInt(3, 13),
-    respawnAt: 0
+    respawnAt: 0,
+    spawnedAt: 0
   };
 }
 
@@ -72,34 +73,29 @@ function ensureMinesState() {
 }
 
 function rollLoot(tier) {
-  const loot = { pp: 0, bronze: 0, silver: 0, seeds: {} };
+  const loot = { pp: 0, seeds: {} };
   const addSeed = (count = 1) => {
-    const cropId = CROP_IDS[Math.floor(Math.random() * CROP_IDS.length)];
-    const seedId = SEED_MAP[cropId] || "seed_corn";
-    loot.seeds[seedId] = (loot.seeds[seedId] || 0) + count;
+    for (let i = 0; i < count; i++) {
+      const cropId = CROP_IDS[Math.floor(Math.random() * CROP_IDS.length)];
+      const seedId = SEED_MAP[cropId] || "seed_corn";
+      loot.seeds[seedId] = (loot.seeds[seedId] || 0) + 1;
+    }
   };
 
   if (tier === "common") {
-    if (Math.random() < 0.5) {
-      loot.pp = randomInt(1, 10);
-    } else {
-      loot.bronze = randomInt(0, 1);
-    }
+    loot.pp = randomInt(2, 10);
+    if (Math.random() < 0.35) addSeed(1);
   } else if (tier === "uncommon") {
-    loot.pp = randomInt(5, 20);
-    loot.bronze = randomInt(2, 5);
-  } else if (tier === "rare") {
-    loot.pp = randomInt(25, 50);
-    loot.bronze = randomInt(5, 10);
+    loot.pp = randomInt(8, 22);
     addSeed(1);
+  } else if (tier === "rare") {
+    loot.pp = randomInt(25, 55);
+    addSeed(2);
   } else if (tier === "epic") {
     loot.pp = randomInt(100, 250);
-    loot.bronze = randomInt(25, 55);
-    addSeed(3);
+    addSeed(4);
   } else if (tier === "legendary") {
     loot.pp = randomInt(300, 500);
-    loot.bronze = randomInt(60, 95);
-    loot.silver = randomInt(1, 2);
     addSeed(10);
   }
   return loot;
@@ -117,6 +113,7 @@ router.get("/state", (req, res) => {
       rock.hp = fresh.maxHp;
       rock.maxHp = fresh.maxHp;
       rock.respawnAt = 0;
+      rock.spawnedAt = now;
       changed = true;
     }
   }

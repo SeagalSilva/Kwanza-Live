@@ -1,18 +1,14 @@
 import { Router } from "express";
 import crypto from "crypto";
-import { dbState, saveDb } from "../db.js";
-import { recordDailyPoints } from "../dailyPool.js";
+import { dbState, saveDb, isAdminEmail, MIN_SEED_PACK, normalizeMarketConfig } from "../db.js";
+import { recordDailyPoints } from "../services/dailyPool.js";
 
 const router = Router();
 
-const CROPS = {
-  corn:      { seedCost: 5,  sell: 4  },
-  beans:     { seedCost: 8,  sell: 7  },
-  peanut:    { seedCost: 12, sell: 6  },
-  cassava:   { seedCost: 20, sell: 12 },
-  banana:    { seedCost: 35, sell: 15 },
-  pineapple: { seedCost: 60, sell: 28 }
-};
+function ensureMarketConfig() {
+  dbState.marketConfig = normalizeMarketConfig(dbState.marketConfig);
+  return dbState.marketConfig;
+}
 
 const EXCHANGES = [
   { from: "bronze", to: "silver", cost: 150, gain: 1 },
@@ -23,26 +19,122 @@ const EXCHANGES = [
 
 const FREE_SEED_STAY_MS = 5000;
 
-// Validate whether buying seeds is permitted
-router.post("/validate-buy-seeds", (req, res) => {
-  const { uid, cropId, qty, bronzeBalance } = req.body || {};
-  const c = CROPS[cropId];
-  const n = Math.floor(Number(qty));
-  const bal = Math.floor(Number(bronzeBalance));
-  if (!uid || !c || isNaN(n) || n < 1 || n > 1000) {
-    return res.status(400).json({ allowed: false, error: "Invalid seed purchase parameters" });
-  }
-  const cost = c.seedCost * n;
-  if (isNaN(bal) || bal < cost) {
-    return res.status(400).json({ allowed: false, error: "Insufficient bronze coins" });
-  }
-  res.json({ allowed: true, cost, qty: n, cropId });
+router.get("/market-config", (req, res) => {
+  res.json({
+    success: true,
+    minPackSize: MIN_SEED_PACK,
+    crops: ensureMarketConfig()
+  });
 });
 
-// Validate whether selling crops is permitted and issue a confirmation token
+router.post("/admin/update-market", (req, res) => {
+  const { adminEmail, crops } = req.body || {};
+  if (!isAdminEmail(adminEmail)) {
+    return res.status(403).json({ success: false, error: "Unauthorized admin" });
+  }
+  if (!crops || typeof crops !== "object") {
+    return res.status(400).json({ success: false, error: "Invalid crops payload" });
+  }
+
+  const current = ensureMarketConfig();
+  for (const [id, cur] of Object.entries(current)) {
+    const incoming = crops[id];
+    if (!incoming || typeof incoming !== "object") continue;
+
+    if (incoming.packPrice !== undefined) {
+      const p = Math.floor(Number(incoming.packPrice));
+      if (!Number.isFinite(p) || p < 1 || p > 10_000_000) {
+        return res.status(400).json({ success: false, error: `Invalid packPrice for ${id}` });
+      }
+      cur.packPrice = p;
+    }
+    if (incoming.packSize !== undefined) {
+      const ps = Math.floor(Number(incoming.packSize));
+      if (!Number.isFinite(ps) || ps < MIN_SEED_PACK || ps > 1000) {
+        return res.status(400).json({ success: false, error: `packSize must be at least ${MIN_SEED_PACK}` });
+      }
+      cur.packSize = ps;
+    }
+    if (incoming.yield !== undefined) {
+      const y = Math.floor(Number(incoming.yield));
+      if (!Number.isFinite(y) || y < 1 || y > 1000) {
+        return res.status(400).json({ success: false, error: `Invalid yield for ${id}` });
+      }
+      cur.yield = y;
+    }
+    if (incoming.sell !== undefined) {
+      const s = Math.floor(Number(incoming.sell));
+      if (!Number.isFinite(s) || s < 1 || s > 1_000_000) {
+        return res.status(400).json({ success: false, error: `Invalid sell PP for ${id}` });
+      }
+      cur.sell = s;
+    }
+  }
+
+  dbState.marketConfig = normalizeMarketConfig(current);
+  saveDb();
+  res.json({
+    success: true,
+    minPackSize: MIN_SEED_PACK,
+    crops: dbState.marketConfig
+  });
+});
+
+// Validate whether buying seed packs is permitted (minimum 5 seeds per pack)
+router.post("/validate-buy-seeds", (req, res) => {
+  const { uid, cropId, packs, qty, bronzeBalance } = req.body || {};
+  const cfg = ensureMarketConfig();
+  const c = cfg[cropId];
+  const bal = Math.floor(Number(bronzeBalance));
+  if (!uid || !c || isNaN(bal)) {
+    return res.status(400).json({ allowed: false, error: "Invalid seed purchase parameters" });
+  }
+
+  const packSize = Math.max(MIN_SEED_PACK, Math.floor(Number(c.packSize) || MIN_SEED_PACK));
+  let packCount = 0;
+
+  if (packs !== undefined) {
+    packCount = Math.floor(Number(packs));
+  } else if (qty !== undefined) {
+    const n = Math.floor(Number(qty));
+    if (!Number.isFinite(n) || n < packSize || n % packSize !== 0) {
+      return res.status(400).json({
+        allowed: false,
+        error: `Minimum seed pack is ${packSize} seeds`
+      });
+    }
+    packCount = n / packSize;
+  }
+
+  if (!Number.isFinite(packCount) || packCount < 1 || packCount > 200) {
+    return res.status(400).json({ allowed: false, error: "Invalid pack quantity" });
+  }
+
+  const totalSeeds = packCount * packSize;
+  const cost = packCount * c.packPrice;
+  if (totalSeeds < MIN_SEED_PACK) {
+    return res.status(400).json({ allowed: false, error: `Minimum ${MIN_SEED_PACK} seeds required` });
+  }
+  if (bal < cost) {
+    return res.status(400).json({ allowed: false, error: "Insufficient bronze coins" });
+  }
+
+  res.json({
+    allowed: true,
+    cost,
+    qty: totalSeeds,
+    packs: packCount,
+    packSize,
+    packPrice: c.packPrice,
+    cropId
+  });
+});
+
+// Validate whether selling crops for Pool Points is permitted and issue a confirmation token
 router.post("/validate-sell-crops", (req, res) => {
   const { uid, cropId, qty, ownedQty } = req.body || {};
-  const c = CROPS[cropId];
+  const cfg = ensureMarketConfig();
+  const c = cfg[cropId];
   const n = Math.floor(Number(qty));
   const owned = Math.floor(Number(ownedQty));
   if (!uid || !c || isNaN(n) || n < 1 || isNaN(owned) || owned < n) {

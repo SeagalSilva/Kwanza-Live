@@ -1,9 +1,8 @@
 // ─────────────────────────────────────────────────────────────
 //  Correio (Post Office / Mailbox) System
 //  - Keeps track of unclaimed 30-min shift rewards
-//  - Keeps track of Daily Pool rewards
-//  - Stores VIP notices and system letters
-//  - Uses atomic confirm / rollback so rewards are never lost
+//  - Keeps track of Daily Pool rewards (synced 1x per UTC date with Firebase)
+//  - Uses in-flight locking + atomic confirm / rollback so rewards are never duplicated
 // ─────────────────────────────────────────────────────────────
 import { S } from "../state.js";
 import { commit, savePath } from "./db.js";
@@ -16,18 +15,36 @@ let mailState = {
   mails: [],
   unreadCount: 0,
   totalClaimableBronze: 0,
-  loading: false
+  loading: false,
+  claiming: false
 };
 
 let syncTimer = null;
 
 export const getMailState = () => mailState;
 
+function getClaimedDailyDatesMap() {
+  const src = S.save?.workstation?.claimedDailyDates;
+  return src && typeof src === "object" ? src : {};
+}
+
+function getClaimedShiftCyclesMap() {
+  const src = S.save?.workstation?.claimedShiftCycles;
+  return src && typeof src === "object" ? src : {};
+}
+
 export async function fetchInbox() {
   if (!S.uid) return mailState;
   mailState.loading = true;
   try {
-    const res = await fetch(`/api/mail/inbox/${encodeURIComponent(S.uid)}`);
+    const params = new URLSearchParams();
+    const dKeys = Object.keys(getClaimedDailyDatesMap()).filter((d) => getClaimedDailyDatesMap()[d]);
+    const sKeys = Object.keys(getClaimedShiftCyclesMap()).filter((c) => getClaimedShiftCyclesMap()[c]);
+    if (dKeys.length > 0) params.set("claimedDates", dKeys.join(","));
+    if (sKeys.length > 0) params.set("claimedShifts", sKeys.join(","));
+    const qs = params.toString();
+
+    const res = await fetch(`/api/mail/inbox/${encodeURIComponent(S.uid)}${qs ? `?${qs}` : ""}`);
     if (res.ok) {
       const data = await res.json();
       mailState.mails = data.mails || [];
@@ -44,12 +61,19 @@ export async function fetchInbox() {
 }
 
 async function processClaimRequest(payload, successMsgKey) {
-  if (!S.uid) return false;
+  if (!S.uid || mailState.claiming) return false;
+  mailState.claiming = true;
+  emit("mail", mailState);
   try {
     const res = await fetch("/api/mail/claim", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uid: S.uid, ...payload })
+      body: JSON.stringify({
+        uid: S.uid,
+        claimedDailyDates: getClaimedDailyDatesMap(),
+        claimedShiftCycles: getClaimedShiftCyclesMap(),
+        ...payload
+      })
     });
     const data = await res.json();
     if (!res.ok || !data.success) {
@@ -59,12 +83,22 @@ async function processClaimRequest(payload, successMsgKey) {
 
     const bronze = Number(data.claimedBronze) || 0;
     const items = data.claimedItems || {};
+    const claimedDates = Array.isArray(data.claimedDates) ? data.claimedDates : [];
+    const claimedShiftCycles = Array.isArray(data.claimedShiftCycles) ? data.claimedShiftCycles : [];
+    const nowTs = Date.now();
+
     const updates = {};
     if (bronze > 0) {
       updates[savePath(S.uid, "wallet/bronze")] = increment(bronze);
     }
     for (const [itemKey, qty] of Object.entries(items)) {
       if (qty > 0) updates[savePath(S.uid, `inv/${itemKey}`)] = increment(qty);
+    }
+    for (const dateKey of claimedDates) {
+      updates[savePath(S.uid, `workstation/claimedDailyDates/${dateKey}`)] = nowTs;
+    }
+    for (const cycleId of claimedShiftCycles) {
+      updates[savePath(S.uid, `workstation/claimedShiftCycles/${cycleId}`)] = nowTs;
     }
 
     if (Object.keys(updates).length === 0) {
@@ -75,6 +109,12 @@ async function processClaimRequest(payload, successMsgKey) {
 
     const ok = await commit(updates);
     if (ok) {
+      if (!S.save.workstation || typeof S.save.workstation !== "object") {
+        S.save.workstation = { claimedDailyDates: {}, claimedShiftCycles: {} };
+      }
+      for (const d of claimedDates) S.save.workstation.claimedDailyDates[d] = nowTs;
+      for (const c of claimedShiftCycles) S.save.workstation.claimedShiftCycles[String(c)] = nowTs;
+
       if (data.claimId) {
         await fetch("/api/mail/claim-confirm", {
           method: "POST",
@@ -94,7 +134,6 @@ async function processClaimRequest(payload, successMsgKey) {
       return true;
     }
 
-    // Rollback on server if Firebase commit failed
     if (data.claimId) {
       await fetch("/api/mail/claim-rollback", {
         method: "POST",
@@ -107,6 +146,9 @@ async function processClaimRequest(payload, successMsgKey) {
     console.error("[mail] Claim failed:", err);
     toast(t("msg.error"), "bad");
     return false;
+  } finally {
+    mailState.claiming = false;
+    emit("mail", mailState);
   }
 }
 

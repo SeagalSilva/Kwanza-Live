@@ -42,12 +42,12 @@ export const WORKSTATION_NPCS = [
     dir: "down",
     look: { skin: 1, hairColor: 2, hairStyle: 2, shirt: 4 },
     lines: ["ws.npcPtc1", "ws.npcPtc2"],
-    offsetMs: 4200
+    offsetMs: 11000
   }
 ];
 
-const NPC_CYCLE_MS = 9500;
-const NPC_SHOW_MS = 6000;
+const NPC_CYCLE_MS = 22000;
+const NPC_SHOW_MS = 5500;
 
 function getNpcBubble(npc, nowMs) {
   const shifted = nowMs + npc.offsetMs;
@@ -55,9 +55,10 @@ function getNpcBubble(npc, nowMs) {
   const inCycle = shifted % NPC_CYCLE_MS;
   if (inCycle > NPC_SHOW_MS) return null;
   const remaining = NPC_SHOW_MS - inCycle;
+  const alpha = inCycle < 350 ? inCycle / 350 : (remaining < 900 ? remaining / 900 : 1);
   return {
     text: t(npc.lines[cycleIdx % npc.lines.length]),
-    alpha: remaining < 900 ? remaining / 900 : 1
+    alpha
   };
 }
 
@@ -368,16 +369,15 @@ export function renderWorkstationRoom(ctx, view, g, { sanitizeLook }) {
   const nowMs = Date.now();
   for (const npc of WORKSTATION_NPCS) {
     const borderCol = npc.id === "npc_ptc" ? "#5dade2" : "#59d17a";
-    drawBadge(ctx, npc.name, npc.x * TILE_SIZE, npc.y * TILE_SIZE - 34, "rgba(14,23,18,0.85)", "#ffffff", borderCol);
+    drawBadge(ctx, npc.name, npc.x * TILE_SIZE, npc.y * TILE_SIZE - 54, "rgba(14,23,18,0.85)", "#ffffff", borderCol);
     const bubble = getNpcBubble(npc, nowMs);
     if (bubble) {
-      drawSpeechBubble(ctx, bubble.text, npc.x * TILE_SIZE, npc.y * TILE_SIZE - 46, bubble.alpha);
+      drawSpeechBubble(ctx, bubble.text, npc.x * TILE_SIZE, npc.y * TILE_SIZE - 66, bubble.alpha);
     }
   }
 
   for (const o of g.others) {
     if ((o.p.room || "world") !== "workstation") continue;
-    drawBadge(ctx, o.p.name || "?", o.p.dx * TILE_SIZE, o.p.dy * TILE_SIZE - 34, "rgba(14,23,18,0.78)", "#ffffff", null);
+    drawBadge(ctx, o.p.name || "?", o.p.dx * TILE_SIZE, o.p.dy * TILE_SIZE - 54, "rgba(14,23,18,0.78)", "#ffffff", null);
   }
-  drawBadge(ctx, S.profile?.username || "", g.me.x * TILE_SIZE, g.me.y * TILE_SIZE - 34, "rgba(14,23,18,0.82)", "#ffffff", "#f5c518");
 }

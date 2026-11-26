@@ -159,13 +159,11 @@ const FOREST_FLOORS = [
 ];
 
 export function createEmptyBag() {
-  return { bronze: 0, silver: 0, pp: 0, seeds: {} };
+  return { pp: 0, seeds: {} };
 }
 
 export function addLootToBag(bag, loot) {
   if (!bag || !loot) return bag;
-  if (loot.bronze > 0) bag.bronze = (bag.bronze || 0) + Number(loot.bronze);
-  if (loot.silver > 0) bag.silver = (bag.silver || 0) + Number(loot.silver);
   if (loot.pp > 0) bag.pp = (bag.pp || 0) + Number(loot.pp);
   if (loot.seeds && typeof loot.seeds === "object") {
     if (!bag.seeds || typeof bag.seeds !== "object") bag.seeds = {};
@@ -178,7 +176,7 @@ export function addLootToBag(bag, loot) {
 
 export function hasBagLoot(bag) {
   if (!bag) return false;
-  if ((bag.bronze || 0) > 0 || (bag.silver || 0) > 0 || (bag.pp || 0) > 0) return true;
+  if ((bag.pp || 0) > 0) return true;
   if (bag.seeds && typeof bag.seeds === "object") {
     for (const qty of Object.values(bag.seeds)) {
       if (qty > 0) return true;
@@ -251,56 +249,50 @@ export function buildFloorRunState(phaseId, floorNum, carryBag = null) {
   };
 }
 
+function addRandomSeeds(loot, count = 1) {
+  for (let i = 0; i < count; i++) {
+    const cropId = CROP_IDS[Math.floor(Math.random() * CROP_IDS.length)];
+    const seedId = SEED_MAP[cropId] || "seed_corn";
+    loot.seeds[seedId] = (loot.seeds[seedId] || 0) + 1;
+  }
+}
+
 export function rollEnemyDrop(floorNum, enemy) {
   const f = Math.max(1, Number(floorNum) || 1);
+  const loot = { pp: 0, seeds: {} };
   if (enemy.isBoss) {
-    return {
-      bronze: randomInt(35, 60),
-      pp: randomInt(120, 200)
-    };
+    loot.pp = randomInt(140, 220);
+    addRandomSeeds(loot, 5);
+    return loot;
   }
   if (enemy.isMiniBoss) {
-    return {
-      bronze: randomInt(15, 28),
-      pp: randomInt(45, 80)
-    };
+    loot.pp = randomInt(50, 90);
+    addRandomSeeds(loot, 2);
+    return loot;
   }
-  return {
-    bronze: randomInt(2 + f, 5 + f * 2),
-    pp: randomInt(4 + f * 2, 10 + f * 4)
-  };
+  loot.pp = randomInt(6 + f * 2, 12 + f * 4);
+  if (f >= 5 || Math.random() < 0.5) {
+    addRandomSeeds(loot, 1);
+  }
+  return loot;
 }
 
 export function rollChestLoot(floorNum) {
   const f = Math.max(1, Number(floorNum) || 1);
   const loot = {
-    bronze: 0,
-    silver: 0,
     pp: 0,
     seeds: {}
   };
 
-  const addSeed = (count = 1) => {
-    const cropId = CROP_IDS[Math.floor(Math.random() * CROP_IDS.length)];
-    const seedId = SEED_MAP[cropId] || "seed_corn";
-    loot.seeds[seedId] = (loot.seeds[seedId] || 0) + count;
-  };
-
   if (f >= 10) {
-    loot.bronze = randomInt(85, 140);
-    loot.silver = randomInt(1, 2);
-    loot.pp = randomInt(260, 420);
-    addSeed(3);
-    addSeed(3);
+    loot.pp = randomInt(280, 450);
+    addRandomSeeds(loot, 10);
   } else if (f === 5) {
-    loot.bronze = randomInt(30, 55);
-    loot.pp = randomInt(80, 140);
-    addSeed(2);
-    addSeed(1);
+    loot.pp = randomInt(90, 160);
+    addRandomSeeds(loot, 5);
   } else {
-    loot.bronze = randomInt(6 + f * 3, 12 + f * 5);
-    loot.pp = randomInt(15 + f * 8, 25 + f * 12);
-    addSeed(f >= 6 ? 2 : 1);
+    loot.pp = randomInt(18 + f * 8, 30 + f * 12);
+    addRandomSeeds(loot, f >= 6 ? 3 : 2);
   }
 
   return loot;

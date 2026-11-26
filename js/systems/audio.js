@@ -181,6 +181,12 @@ export function playRockBreak() {
   tone(90, 40, 0.2, { type: "triangle", gain: 0.14, delay: 0.04 });
 }
 
+/** Heavy stone thud when a respawned rock drops from the mine ceiling. */
+export function playRockLand() {
+  tone(110, 42, 0.14, { type: "triangle", gain: 0.11, delay: 0 });
+  tone(78, 36, 0.12, { type: "sine", gain: 0.09, delay: 0.03 });
+}
+
 /** Sparkling chime when discovering precious gems and ores. */
 export function playPreciousGem() {
   tone(783.99, 783.99, 0.08, { type: "sine", gain: 0.15, delay: 0 });

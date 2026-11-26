@@ -20,6 +20,7 @@ export function openPostOffice() {
       const state = getMailState();
       const allMails = state.mails || [];
       const totalClaimable = state.totalClaimableBronze || 0;
+      const isClaiming = !!state.claiming;
 
       let filtered = allMails;
       if (filter === "rewards") {
@@ -43,7 +44,7 @@ export function openPostOffice() {
                 <p>${esc(t("mail.claimAllDesc"))}</p>
               </div>
             </div>
-            <button id="mail-claim-all-btn" class="btn good small" type="button" style="white-space: nowrap; font-weight: 700;">
+            <button id="mail-claim-all-btn" class="btn good small" type="button" style="white-space: nowrap; font-weight: 700;" ${isClaiming ? "disabled" : ""}>
               📥 ${esc(t("mail.claimAllBtn", { n: fmtNum(totalClaimable) }))}
             </button>
           </div>
@@ -87,7 +88,7 @@ export function openPostOffice() {
             rewardBadge = `
               <div class="mail-reward-row">
                 <span class="mail-reward-chip">+${fmtNum(b)} 🥉</span>
-                <button class="btn ${isClaimed ? "alt" : "good"} small mail-claim-one-btn" data-claim-id="${esc(m.id)}" type="button" ${isClaimed ? "disabled" : ""}>
+                <button class="btn ${isClaimed ? "alt" : "good"} small mail-claim-one-btn" data-claim-id="${esc(m.id)}" type="button" ${isClaimed || isClaiming ? "disabled" : ""}>
                   ${isClaimed ? "✅ " + esc(t("mail.alreadyClaimed")) : "🎁 " + esc(t("mail.claimBtn"))}
                 </button>
               </div>
@@ -143,6 +144,8 @@ export function openPostOffice() {
       const claimAllBtn = body.querySelector("#mail-claim-all-btn");
       if (claimAllBtn) {
         claimAllBtn.onclick = () => {
+          if (getMailState().claiming) return;
+          claimAllBtn.disabled = true;
           claimAllMail();
         };
       }
@@ -158,8 +161,12 @@ export function openPostOffice() {
       body.querySelectorAll(".mail-claim-one-btn").forEach((btn) => {
         btn.onclick = (e) => {
           e.stopPropagation();
+          if (getMailState().claiming) return;
           const mid = btn.dataset.claimId;
-          if (mid) claimMail(mid);
+          if (mid) {
+            btn.disabled = true;
+            claimMail(mid);
+          }
         };
       });
 

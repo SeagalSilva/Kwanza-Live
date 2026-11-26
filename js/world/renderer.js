@@ -13,6 +13,7 @@ import { renderMinesRoom } from "./minesRoom.js";
 import { renderDungeonRoom } from "./dungeonRoom.js";
 import { renderWorkstationRoom } from "./workstationRoom.js";
 import { drawLandFloor, drawLandFenceDecor, pushLandEntities } from "./landVisuals.js";
+import { drawBuilding } from "./buildings.js";
 import { hash2, colorFromString } from "../utils.js";
 
 export const view = { cw: 0, ch: 0, zoom: 1, dpr: 1, camX: 0, camY: 0 };
@@ -217,181 +218,30 @@ function drawCrop(ctx, tx, ty, scope, key, time) {
   }
 }
 
-// ── buildings & trees ────────────────────────────────────────
-function drawMineBuilding(ctx, b) {
-  const x = b.x * TILE, y = b.y * TILE, w = b.w * TILE, h = b.h * TILE;
-  ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(x + 4, y + h - 4, w, 8);
-
-  // Rocky mountain mound background
-  ctx.fillStyle = "#3e4a54";
-  ctx.beginPath();
-  ctx.moveTo(x, y + h);
-  ctx.lineTo(x + 8, y + TILE * 0.8);
-  ctx.lineTo(x + w / 2, y);
-  ctx.lineTo(x + w - 8, y + TILE * 0.8);
-  ctx.lineTo(x + w, y + h);
-  ctx.closePath();
-  ctx.fill();
-
-  // Stone face texture
-  ctx.fillStyle = "#2c3e50";
-  ctx.fillRect(x + 6, y + TILE * 1.2, w - 12, h - TILE * 1.2);
-
-  // Wooden tunnel support frame (Timber archway)
-  ctx.fillStyle = "#5c3a21";
-  ctx.fillRect(x + TILE * 1.2, y + TILE * 1.2, 10, h - TILE * 1.2);
-  ctx.fillRect(x + w - TILE * 1.2 - 10, y + TILE * 1.2, 10, h - TILE * 1.2);
-  ctx.fillRect(x + TILE * 1.0, y + TILE * 1.0, w - TILE * 2.0, 12);
-
-  // Dark cavern entrance (tunnel opening)
-  ctx.fillStyle = "#11161d";
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(x + TILE * 1.6, y + TILE * 1.6, w - TILE * 3.2, h - TILE * 1.6, [20, 20, 0, 0]);
-  else ctx.rect(x + TILE * 1.6, y + TILE * 1.6, w - TILE * 3.2, h - TILE * 1.6);
-  ctx.fill();
-
-  // Glowing ore crystals on rock face (cyan & purple)
-  ctx.fillStyle = "#00e5ff";
-  ctx.beginPath();
-  ctx.arc(x + 16, y + TILE * 2.2, 3, 0, Math.PI * 2);
-  ctx.arc(x + w - 18, y + TILE * 2.5, 3.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#d500f9";
-  ctx.beginPath();
-  ctx.arc(x + 24, y + TILE * 3.2, 3, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Wooden sign "MINAS" above entrance
-  ctx.fillStyle = "#4a2e17";
-  ctx.fillRect(x + w / 2 - 34, y + 6, 68, 18);
-  ctx.strokeStyle = "#f5c518";
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(x + w / 2 - 34, y + 6, 68, 18);
-  ctx.fillStyle = "#f5c518";
-  ctx.font = `700 9px system-ui`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("⛏️ MINAS", x + w / 2, y + 15);
-}
-
-function drawDungeonBuilding(ctx, b) {
-  const x = b.x * TILE, y = b.y * TILE, w = b.w * TILE, h = b.h * TILE;
-  ctx.fillStyle = "rgba(0,0,0,.28)";
-  ctx.fillRect(x + 4, y + h - 4, w, 8);
-
-  // Ancient mossy stone sanctuary facade
-  ctx.fillStyle = "#2d3b32";
-  ctx.beginPath();
-  ctx.moveTo(x + 2, y + h);
-  ctx.lineTo(x + 6, y + TILE * 0.7);
-  ctx.lineTo(x + w / 2, y);
-  ctx.lineTo(x + w - 6, y + TILE * 0.7);
-  ctx.lineTo(x + w - 2, y + h);
-  ctx.closePath();
-  ctx.fill();
-
-  // Stone block inner frame
-  ctx.fillStyle = "#3c4e42";
-  ctx.fillRect(x + 10, y + TILE * 1.15, w - 20, h - TILE * 1.15);
-
-  // Overgrown forest vines & moss on top
-  ctx.fillStyle = "#2e7d32";
-  ctx.beginPath();
-  ctx.arc(x + 16, y + TILE * 1.1, 14, 0, Math.PI * 2);
-  ctx.arc(x + w / 2, y + TILE * 0.85, 18, 0, Math.PI * 2);
-  ctx.arc(x + w - 16, y + TILE * 1.1, 14, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#43a047";
-  ctx.beginPath();
-  ctx.arc(x + w / 2 - 8, y + TILE * 0.8, 10, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Glowing emerald dungeon portal archway
-  ctx.fillStyle = "#0b1710";
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(x + TILE * 1.1, y + TILE * 1.65, w - TILE * 2.2, h - TILE * 1.65, [18, 18, 0, 0]);
-  else ctx.rect(x + TILE * 1.1, y + TILE * 1.65, w - TILE * 2.2, h - TILE * 1.65);
-  ctx.fill();
-
-  ctx.fillStyle = "rgba(89, 209, 122, 0.35)";
-  ctx.beginPath();
-  if (ctx.roundRect) ctx.roundRect(x + TILE * 1.25, y + TILE * 1.85, w - TILE * 2.5, h - TILE * 1.85, [14, 14, 0, 0]);
-  else ctx.rect(x + TILE * 1.25, y + TILE * 1.85, w - TILE * 2.5, h - TILE * 1.85);
-  ctx.fill();
-
-  // Twin flickering torches beside doorway
-  ctx.fillStyle = "#ff9800";
-  ctx.beginPath();
-  ctx.arc(x + TILE * 0.75, y + TILE * 2.6, 4, 0, Math.PI * 2);
-  ctx.arc(x + w - TILE * 0.75, y + TILE * 2.6, 4, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Crest sign
-  ctx.fillStyle = "#1a2b20";
-  ctx.fillRect(x + w / 2 - 34, y + 8, 68, 17);
-  ctx.strokeStyle = "#59d17a";
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(x + w / 2 - 34, y + 8, 68, 17);
-  ctx.fillStyle = "#d4ffdf";
-  ctx.font = "700 9px system-ui";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("🌲 DUNGEON", x + w / 2, y + 16.5);
-}
-
-function drawBuilding(ctx, b) {
-  if (b.id === "mines") {
-    return drawMineBuilding(ctx, b);
-  }
-  if (b.id === "dungeon") {
-    return drawDungeonBuilding(ctx, b);
-  }
-  const x = b.x * TILE, y = b.y * TILE, w = b.w * TILE, h = b.h * TILE;
-  ctx.fillStyle = "rgba(0,0,0,.2)"; ctx.fillRect(x + 4, y + h - 4, w, 8);
-  ctx.fillStyle = b.body; ctx.fillRect(x, y + TILE * 1.1, w, h - TILE * 1.1);
-  ctx.fillStyle = "rgba(0,0,0,.1)"; ctx.fillRect(x, y + h - 6, w, 6);
-  // roof
-  ctx.fillStyle = b.roof;
-  ctx.beginPath(); ctx.moveTo(x - 8, y + TILE * 1.4); ctx.lineTo(x + 12, y); ctx.lineTo(x + w - 12, y); ctx.lineTo(x + w + 8, y + TILE * 1.4); ctx.closePath(); ctx.fill();
-  // awning stripes
-  for (let i = 0; i < b.w * 2; i++) {
-    ctx.fillStyle = i % 2 ? "#fff" : b.roof;
-    ctx.fillRect(x + i * (TILE / 2), y + TILE * 1.4, TILE / 2, 10);
-  }
-  // door
-  const dx = (b.front.x - 0.5) * TILE;
-  ctx.fillStyle = "#4a2e17"; ctx.fillRect(dx + 4, y + h - 26, TILE - 8, 26);
-  ctx.fillStyle = "#f5c518"; ctx.fillRect(dx + TILE - 10, y + h - 14, 3, 3);
-  // windows
-  ctx.fillStyle = "#9ed0f0";
-  for (let i = 0; i < b.w; i++) {
-    if (Math.abs(i + 0.5 - b.w / 2) < 1.2) continue;
-    ctx.fillRect(x + i * TILE + 7, y + TILE * 2.3, TILE - 14, 16);
-  }
-
-  // Post Office specific mailbox pillar on front wall
-  if (b.id === "postOffice") {
-    const pbx = x + 10, pby = y + h - 24;
-    // Red mailbox pillar
-    ctx.fillStyle = "#c0392b";
-    ctx.fillRect(pbx, pby, 16, 24);
-    // Gold mail slot
-    ctx.fillStyle = "#f39c12";
-    ctx.fillRect(pbx + 3, pby + 4, 10, 3);
-    // Envelope icon
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(pbx + 4, pby + 11, 8, 6);
-  }
-}
-
+// ── trees (buildings delegated to ./buildings.js) ─────────────
 function drawTree(ctx, tx, ty) {
   const x = tx * TILE + TILE / 2, y = (ty + 1) * TILE;
   const v = hash2(tx, ty);
-  ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.beginPath(); ctx.ellipse(x, y - 2, 13, 5, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#6b4423"; ctx.fillRect(x - 3, y - 16, 6, 16);
-  const g1 = v < 0.5 ? "#2f7d32" : "#388e3c", g2 = v < 0.5 ? "#3d9a41" : "#43a047";
-  ctx.fillStyle = g1; ctx.beginPath(); ctx.arc(x, y - 26, 13, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(x - 4, y - 30, 8, 0, Math.PI * 2); ctx.fill();
+  // Diagonal cast shadow (upper-left sun -> down-right)
+  ctx.fillStyle = "rgba(8,14,10,.24)";
+  ctx.beginPath();
+  ctx.ellipse(x + 5, y - 1, 15, 5.5, 0.14, 0, Math.PI * 2);
+  ctx.fill();
+  // Shaded 2.5D trunk
+  ctx.fillStyle = "#543419";
+  ctx.fillRect(x - 3.5, y - 17, 7, 17);
+  ctx.fillStyle = "#7a4d28";
+  ctx.fillRect(x - 3.5, y - 17, 4, 17);
+  // 3-tone volumetric canopy
+  const dark = v < 0.5 ? "#1f5a22" : "#256829";
+  const mid = v < 0.5 ? "#2f7d32" : "#388e3c";
+  const hi = v < 0.5 ? "#4eb352" : "#59c25d";
+  ctx.fillStyle = dark;
+  ctx.beginPath(); ctx.arc(x + 2, y - 24, 13.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = mid;
+  ctx.beginPath(); ctx.arc(x, y - 27, 12.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = hi;
+  ctx.beginPath(); ctx.arc(x - 4, y - 31, 7.5, 0, Math.PI * 2); ctx.fill();
 }
 
 function drawAdBillboard(ctx, sign, time, focused) {
@@ -524,7 +374,7 @@ export function render(ctx, g) {
     ctx.setLineDash([]);
   }
 
-  for (const b of BUILDINGS) entities.push({ y: (b.y + b.h) * TILE, draw: () => drawBuilding(ctx, b) });
+  for (const b of BUILDINGS) entities.push({ y: (b.y + b.h) * TILE, draw: () => drawBuilding(ctx, b, g.time) });
 
   for (const s of AD_SIGNS) {
     if (GRID[s.y]?.[s.x] !== T.GRASS) continue;
@@ -604,8 +454,7 @@ export function render(ctx, g) {
       bg: "#f5c518", fg: "#1b1500", size: 12, border: "#1b1500"
     });
   }
-  for (const o of g.others) pill(ctx, o.p.name || "?", o.p.dx * TILE, o.p.dy * TILE - 46, { size: 10 });
-  pill(ctx, S.profile?.username || "", g.me.x * TILE, g.me.y * TILE - 46, { size: 11, border: "#f5c518" });
+  for (const o of g.others) pill(ctx, o.p.name || "?", o.p.dx * TILE, o.p.dy * TILE - 54, { size: 10 });
 
   // ── speech bubbles (above name tag) ──
   const nowTime = Date.now();
@@ -615,14 +464,14 @@ export function render(ctx, g) {
       if (b && b.expiresAt > nowTime) {
         const remaining = b.expiresAt - nowTime;
         const alpha = remaining < 1000 ? remaining / 1000 : 1;
-        drawSpeechBubble(ctx, b.text, o.p.dx * TILE, o.p.dy * TILE - 54, alpha);
+        drawSpeechBubble(ctx, b.text, o.p.dx * TILE, o.p.dy * TILE - 65, alpha);
       }
     }
     const myBubble = S.chat.bubbles.get(S.uid);
     if (myBubble && myBubble.expiresAt > nowTime) {
       const remaining = myBubble.expiresAt - nowTime;
       const alpha = remaining < 1000 ? remaining / 1000 : 1;
-      drawSpeechBubble(ctx, myBubble.text, g.me.x * TILE, g.me.y * TILE - 54, alpha);
+      drawSpeechBubble(ctx, myBubble.text, g.me.x * TILE, g.me.y * TILE - 48, alpha);
     }
   }
 }
