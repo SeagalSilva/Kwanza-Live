@@ -21,11 +21,34 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Login */
+#screen-login .panel.hero { margin-top: auto; }
 .hero { text-align: center; }
 .logo { font-size: 44px; font-weight: 900; letter-spacing: -1px; }
 .logo span { color: var(--gold); }
 .tag { color: var(--mut); margin: 10px 0 22px; line-height: 1.5; }
 .how { list-style: none; margin-top: 20px; text-align: left; display: grid; gap: 8px; font-size: 14px; color: var(--mut); }
+.login-banner-wrap {
+  margin-bottom: auto;
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+#adslab-banner-unit-cvmntcrm8 {
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#adslab-banner-unit-cvmntcrm8 img,
+#adslab-banner-unit-cvmntcrm8 iframe {
+  max-width: 100%;
+  display: block;
+}
 
 .status { min-height: 20px; font-size: 13px; margin: 8px 0; }
 .status.ok { color: var(--ok); }

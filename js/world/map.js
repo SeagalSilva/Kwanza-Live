@@ -10,6 +10,14 @@ export const mapSize = { w: MAP_W, h: MAP_H };
 export const PUBLIC_FARM = { x0: 12, y0: 12, w: 7, h: 6 };
 export const SPAWN = { x: 24, y: 22.5 };
 
+export const AD_SIGNS = [
+  { id: "sign_center", x: 25, y: 19, labelKey: "ad.signCenter" },
+  { id: "sign_west",   x: 11, y: 19, labelKey: "ad.signWest" },
+  { id: "sign_east",   x: 31, y: 19, labelKey: "ad.signEast" },
+  { id: "sign_north",  x: 25, y: 9,  labelKey: "ad.signNorth" },
+  { id: "sign_south",  x: 25, y: 30, labelKey: "ad.signSouth" }
+];
+
 const BASE_BUILDINGS = [
   { id: "workstation", x: 6,  y: 12, w: 6, h: 4, roof: "#e67e22", body: "#f5e6cb" },
   { id: "government",  x: 18, y: 4,  w: 6, h: 4, roof: "#8e44ad", body: "#f3e5f5" },
@@ -129,6 +137,9 @@ function rebuildGrid() {
   // Spawn area stays clear
   reserve(Math.floor(SPAWN.x) - 2, Math.floor(SPAWN.y) - 2, 5, 5, 0);
 
+  // Roadside billboard signs stay clear of trees
+  for (const s of AD_SIGNS) reserve(s.x, s.y, 1, 1, 0);
+
   // Border forest + scattered trees
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const border = x < 2 || y < 2 || x >= W - 2 || y >= H - 2;
@@ -202,8 +213,13 @@ applyMapConfig();
 export const isBlockedStatic = (tx, ty) => {
   if (!inBounds(tx, ty)) return true;
   const g = GRID[ty][tx];
-  return g === T.WATER || g === T.TREE || g === T.BUILDING || g === T.FENCE;
+  if (g === T.WATER || g === T.TREE || g === T.BUILDING || g === T.FENCE) return true;
+  if (g === T.GRASS && AD_SIGNS.some((s) => s.x === tx && s.y === ty)) return true;
+  return false;
 };
+
+export const adSignAtTile = (tx, ty) =>
+  AD_SIGNS.find((s) => s.x === tx && s.y === ty && GRID[ty]?.[tx] === T.GRASS) || null;
 
 export const buildingAtTile = (tx, ty) =>
   BUILDINGS.find((b) => tx >= b.x && tx < b.x + b.w && ty >= b.y && ty < b.y + b.h) || null;

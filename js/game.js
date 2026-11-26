@@ -13,6 +13,7 @@ import { startPresence, stopPresence, publishPosition, isFresh } from "./systems
 import { stopCasinoSync, releaseSlotMachine } from "./systems/casino.js";
 import { drawPortrait, setInteractLabel, resetInteractLabel } from "./ui/hud.js";
 import { closeModal } from "./ui/modal.js";
+import { initGameAdSign, stopGameAdSign, syncGameAdSignProximity } from "./systems/ads.js";
 
 let running = false;
 let raf = 0;
@@ -64,6 +65,7 @@ export function startGame() {
 
   setInputActive(true);
   startPresence(me);
+  initGameAdSign();
   running = true;
   last = performance.now();
   raf = requestAnimationFrame(loop);
@@ -76,6 +78,7 @@ export function stopGame() {
   exitMapEditMode();
   stopCasinoSync();
   releaseSlotMachine();
+  stopGameAdSign();
   S.room = "world";
   closeModal();
   stopPresence();
@@ -92,6 +95,7 @@ function loop(ts) {
   updateMe(dt, input);
   tickPending();
   if (S.room === "dungeon") updateDungeon(dt, me, handleLeaveDungeon);
+  else if (S.room === "world") syncGameAdSignProximity(me);
 
   focus = computeFocus();
   setInteractLabel(focusLabel(focus));

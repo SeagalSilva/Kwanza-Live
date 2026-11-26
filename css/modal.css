@@ -11,7 +11,7 @@
 .modal header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 6px; }
 .modal header h2 { font-size: 18px; }
 .modal .x { width: 34px; height: 34px; border-radius: 50%; background: var(--panel-2); }
-.modal-body { padding: 6px 16px 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.modal-body { padding: 6px 16px 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; overscroll-behavior-y: contain; }
 
 .row {
   display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, .06);
@@ -1000,5 +1000,67 @@
 .ptc-status-note.running {
   color: var(--gold);
 }
+.ptc-history-card {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ptc-history-card.pending {
+  border-color: var(--gold);
+  background: rgba(245, 197, 24, 0.08);
+}
+.ptc-history-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ptc-history-top strong {
+  font-size: 13px;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ptc-history-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.ptc-history-date {
+  font-size: 11px;
+  color: var(--mut);
+}
+.ptc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.ptc-badge.withdrawn {
+  background: rgba(89, 209, 122, 0.14);
+  border: 1px solid rgba(89, 209, 122, 0.45);
+  color: var(--ok);
+}
+.ptc-badge.ready {
+  background: rgba(245, 197, 24, 0.16);
+  border: 1px solid rgba(245, 197, 24, 0.55);
+  color: var(--gold);
+}
+.ptc-badge.counting {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--txt);
+}
+
 
 

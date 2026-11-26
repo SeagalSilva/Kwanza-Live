@@ -45,7 +45,13 @@ export function startSync(uid) {
           wallet: nextWallet,
           inv: v.inv || {},
           energy: { current: 100, max: 100, lastRegen: Date.now(), ...(v.energy || {}) },
-          adExemptUntil: v.adExemptUntil || 0
+          adExemptUntil: v.adExemptUntil || 0,
+          ptc: v.ptc && typeof v.ptc === "object"
+            ? {
+                activeSession: v.ptc.activeSession || null,
+                history: Array.isArray(v.ptc.history) ? v.ptc.history : []
+              }
+            : { activeSession: null, history: [] }
         };
         emit("save");
       }

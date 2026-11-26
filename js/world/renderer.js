@@ -2,7 +2,7 @@
 import { TILE } from "../config.js";
 import { S } from "../state.js";
 import { t, fmtNum } from "../i18n.js";
-import { mapSize, GRID, T, PUBLIC_FARM, BUILDINGS, LAND_META, fenceIndex, farmIndex } from "./map.js";
+import { mapSize, GRID, T, PUBLIC_FARM, BUILDINGS, LAND_META, AD_SIGNS, fenceIndex, farmIndex } from "./map.js";
 import { LAND_SIZE } from "../data/lands.js";
 import { CROPS } from "../data/crops.js";
 import { cropState, tileData } from "../systems/farming.js";
@@ -394,6 +394,37 @@ function drawTree(ctx, tx, ty) {
   ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(x - 4, y - 30, 8, 0, Math.PI * 2); ctx.fill();
 }
 
+function drawAdBillboard(ctx, sign, time, focused) {
+  const cx = (sign.x + 0.5) * TILE;
+  const baseY = (sign.y + 1) * TILE;
+  // Shadow
+  ctx.fillStyle = "rgba(0,0,0,.22)";
+  ctx.beginPath();
+  ctx.ellipse(cx, baseY - 2, 15, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Two wooden support posts
+  ctx.fillStyle = "#5c3a21";
+  ctx.fillRect(cx - 11, baseY - 14, 4, 13);
+  ctx.fillRect(cx + 7, baseY - 14, 4, 13);
+  // Board body
+  const bx = cx - 17, by = baseY - 34, bw = 34, bh = 22;
+  ctx.fillStyle = "#3c2614";
+  ctx.fillRect(bx, by, bw, bh);
+  // Animated gold/dark display panel
+  const pulse = 0.72 + Math.sin(time * 3 + sign.x) * 0.18;
+  ctx.fillStyle = "#102117";
+  ctx.fillRect(bx + 3, by + 3, bw - 6, bh - 6);
+  ctx.fillStyle = `rgba(245, 197, 24, ${pulse})`;
+  ctx.fillRect(bx + 5, by + 5, bw - 10, 4);
+  ctx.fillStyle = "#59d17a";
+  ctx.fillRect(bx + 5, by + 11, bw - 14, 3);
+  ctx.fillRect(bx + 5, by + 15, bw - 18, 2);
+  // Gold border (brighter when focused)
+  ctx.strokeStyle = focused ? "#ffffff" : "#f5c518";
+  ctx.lineWidth = focused ? 2 : 1.5;
+  ctx.strokeRect(bx, by, bw, bh);
+}
+
 // ── main render ──────────────────────────────────────────────
 /**
  * g = { me, others: [{p, id}], focus, time }
@@ -495,6 +526,12 @@ export function render(ctx, g) {
 
   for (const b of BUILDINGS) entities.push({ y: (b.y + b.h) * TILE, draw: () => drawBuilding(ctx, b) });
 
+  for (const s of AD_SIGNS) {
+    if (GRID[s.y]?.[s.x] !== T.GRASS) continue;
+    const isFocused = g.focus?.kind === "adSign" && g.focus.id === s.id;
+    entities.push({ y: (s.y + 1) * TILE, draw: () => drawAdBillboard(ctx, s, g.time, isFocused) });
+  }
+
   const look = sanitizeLook(S.profile?.look);
   for (const o of g.others) {
     entities.push({
@@ -515,6 +552,11 @@ export function render(ctx, g) {
   for (const b of BUILDINGS) {
     const icon = b.id === "gameMarket" ? "🏪" : b.id === "bazaar" ? "🧺" : b.id === "government" ? "🏛️" : b.id === "casino" ? "🎰" : b.id === "mines" ? "⛏️" : b.id === "postOffice" ? "📮" : b.id === "dungeon" ? "🌲" : "🔨";
     pill(ctx, `${icon} ${t(`place.${b.id}`)}`, (b.x + b.w / 2) * TILE, (b.y - 0.35) * TILE, { size: 12, border: b.id === "dungeon" ? "#59d17a" : "#f5c518" });
+  }
+  for (const s of AD_SIGNS) {
+    if (s.x < x0 - 1 || s.x > x1 + 1 || s.y < y0 - 1 || s.y > y1 + 1) continue;
+    if (GRID[s.y]?.[s.x] !== T.GRASS) continue;
+    pill(ctx, `🪧 ${t(s.labelKey)}`, (s.x + 0.5) * TILE, (s.y - 0.15) * TILE, { size: 9, border: "#f5c518" });
   }
   for (const l of LAND_META) {
     if (l.x0 > x1 + 1 || l.x0 + LAND_SIZE < x0 - 1 || l.y0 > y1 + 1 || l.y0 + LAND_SIZE < y0 - 1) continue;

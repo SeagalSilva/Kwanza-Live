@@ -2,7 +2,7 @@
 import { S } from "../state.js";
 import { t } from "../i18n.js";
 import { me, DIRV } from "./player.js";
-import { farmIndex, BUILDINGS, LAND_META, buildingAtTile, landAtTile } from "./map.js";
+import { farmIndex, BUILDINGS, LAND_META, AD_SIGNS, GRID, T, buildingAtTile, landAtTile, adSignAtTile } from "./map.js";
 import { exitMapEditMode } from "./editor.js";
 import {
   enterCasinoRoom,
@@ -49,6 +49,7 @@ import { openGovernment } from "../ui/modals/government.js";
 import { openPostOffice } from "../ui/modals/postOffice.js";
 import { openDungeonModal } from "../ui/modals/dungeon.js";
 import { playEnterBuilding } from "../systems/audio.js";
+import { showGameAdSign } from "../systems/ads.js";
 
 function handleLeaveCasino() {
   releaseSlotMachine();
@@ -99,6 +100,10 @@ export function computeFocus() {
   for (const l of LAND_META) {
     if (Math.hypot(me.x - l.sign.x, me.y - l.sign.y) < 2.4) return { kind: "land", id: l.id };
   }
+  for (const s of AD_SIGNS) {
+    if (GRID[s.y]?.[s.x] !== T.GRASS) continue;
+    if (Math.hypot(me.x - (s.x + 0.5), me.y - (s.y + 0.5)) < 2.1) return { kind: "adSign", id: s.id, labelKey: s.labelKey };
+  }
   return null;
 }
 
@@ -110,6 +115,7 @@ export function focusLabel(f) {
   if (S.room === "workstation") return focusLabelWorkstation(f);
   if (f.kind === "building") return t("act.open", { place: t(`place.${f.id}`) });
   if (f.kind === "land") return t("act.viewLand", { id: f.id });
+  if (f.kind === "adSign") return `🪧 ${t("ad.signInspect")}`;
   const tile = tileData(f.scope, f.key);
   const st = cropState(tile);
   if (st.stage === "empty") {
@@ -151,6 +157,11 @@ export function perform(f) {
     playEnterBuilding();
     return openLand(f.id);
   }
+  if (f.kind === "adSign") {
+    const s = AD_SIGNS.find((x) => x.id === f.id);
+    showGameAdSign(s ? t(s.labelKey) : t("ad.signTitle"), { manual: true });
+    return;
+  }
   // face the tile
   const dx = f.tx + 0.5 - me.x, dy = f.ty + 0.5 - me.y;
   if (Math.abs(dx) > Math.abs(dy)) me.dir = dx > 0 ? "right" : "left"; else if (Math.abs(dy) > 0.2) me.dir = dy > 0 ? "down" : "up";
@@ -180,6 +191,9 @@ export function handleTap(wx, wy) {
   const land = landAtTile(tx, ty);
   if (land) { me.target = { ...land.sign }; me.pending = { kind: "land", id: land.id }; return; }
 
+  const sign = adSignAtTile(tx, ty);
+  if (sign) { me.target = { x: sign.x + 0.5, y: sign.y + 1.3 }; me.pending = { kind: "adSign", id: sign.id }; return; }
+
   me.target = { x: wx, y: wy };
   me.pending = null;
 }
@@ -196,6 +210,7 @@ export function tickPending() {
   let px, py, range;
   if (p.kind === "tile") { px = p.tx + 0.5; py = p.ty + 0.5; range = 1.5; }
   else if (p.kind === "building") { const b = BUILDINGS.find((x) => x.id === p.id); px = b.front.x; py = b.front.y; range = 0.9; }
+  else if (p.kind === "adSign") { const s = AD_SIGNS.find((x) => x.id === p.id); px = s.x + 0.5; py = s.y + 0.5; range = 1.8; }
   else { const l = LAND_META.find((x) => x.id === p.id); px = l.sign.x; py = l.sign.y; range = 1.6; }
   if (Math.hypot(me.x - px, me.y - py) <= range) {
     me.pending = null; me.target = null;

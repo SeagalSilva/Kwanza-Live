@@ -16,6 +16,8 @@ import { toast } from "./ui/toast.js";
 import { startGame, stopGame } from "./game.js";
 import { startAdScheduler, stopAdScheduler, verifyAdExemptionOnLogin } from "./systems/ads.js";
 import { startMailSync, stopMailSync } from "./systems/mail.js";
+import { restorePendingPtcOnEnter } from "./systems/ptc.js";
+import { openPtcTasksModal } from "./ui/modals/ptcTasks.js";
 
 let hudReady = false;
 
@@ -46,6 +48,7 @@ async function enterGame() {
   showScreen("game");
   if (!hudReady) { initHud(); hudReady = true; }
   startGame();
+  restorePendingPtcOnEnter(openPtcTasksModal);
 }
 
 watchAuth(async (user) => {

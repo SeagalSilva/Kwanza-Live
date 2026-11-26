@@ -7,10 +7,11 @@
 import { S, bal, isAdExempt } from "../state.js";
 import { t } from "../i18n.js";
 import { toast } from "../ui/toast.js";
-import { emit } from "../bus.js";
+import { emit, on } from "../bus.js";
 import { commit, savePath } from "./db.js";
 import { increment } from "../firebase.js";
 import { isAdmin } from "./government.js";
+import { AD_SIGNS, GRID, T } from "../world/map.js";
 import {
   ADSLAB_INT_ID,
   ADSLAB_SDK_URL,
@@ -279,4 +280,150 @@ export async function triggerMandatoryAd() {
 export async function triggerAdminInterstitial() {
   if (!isAdmin()) return false;
   return showInterstitialAd({ force: true });
+}
+
+// ─────────────────────────────────────────────────────────────
+//  In-game Appearing Signboard Banners (AdsLab unit-1oylplyud)
+// ─────────────────────────────────────────────────────────────
+const ADSLAB_BANNER_UNIT_ID = "unit-1oylplyud";
+const ADSLAB_BANNER_CONTAINER = "adslab-banner-unit-1oylplyud";
+const ADSLAB_BANNER_SCRIPT_URL = "https://serve.adslab.me/api/banner/js";
+const GAME_SIGN_FIRST_DELAY_MS = 9000;
+const GAME_SIGN_INTERVAL_MS = 75000;
+const GAME_SIGN_DURATION_MS = 22000;
+
+let signCycleTimer = null;
+let signHideTimer = null;
+let signListenersReady = false;
+let signBannerRetryCount = 0;
+let lastProximitySignId = null;
+
+function getGameSignEl() {
+  return typeof document !== "undefined" ? document.getElementById("game-ad-sign") : null;
+}
+
+function ensureGameBannerLoaded() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  const container = document.getElementById(ADSLAB_BANNER_CONTAINER);
+  if (!container) return;
+
+  window.adslab_banners = window.adslab_banners || [];
+  if (!window.adslab_banners.some((b) => b && b.container === ADSLAB_BANNER_CONTAINER)) {
+    window.adslab_banners.push({
+      id: ADSLAB_BANNER_UNIT_ID,
+      container: ADSLAB_BANNER_CONTAINER
+    });
+  }
+
+  // If the script ran before #screen-game became active and left the container empty, re-trigger once
+  if (container.childElementCount === 0 && signBannerRetryCount < 2) {
+    signBannerRetryCount += 1;
+    const s = document.createElement("script");
+    s.src = ADSLAB_BANNER_SCRIPT_URL;
+    s.async = true;
+    document.head.appendChild(s);
+  }
+}
+
+export function hideGameAdSign() {
+  if (signHideTimer) {
+    clearTimeout(signHideTimer);
+    signHideTimer = null;
+  }
+  const el = getGameSignEl();
+  if (el) {
+    el.classList.remove("visible");
+    el.setAttribute("aria-hidden", "true");
+  }
+}
+
+export function showGameAdSign(label = null, { manual = false } = {}) {
+  if (!manual && isAdExempt()) return;
+  if (!S.uid || !S.profile) return;
+
+  const el = getGameSignEl();
+  if (!el) return;
+
+  ensureGameBannerLoaded();
+
+  const titleEl = document.getElementById("game-ad-sign-title");
+  if (titleEl) {
+    titleEl.textContent = `🪧 ${label || t("ad.signTitle")}`;
+  }
+  const closeEl = document.getElementById("game-ad-sign-close");
+  if (closeEl) {
+    closeEl.setAttribute("aria-label", t("ad.signDismiss"));
+  }
+
+  el.classList.add("visible");
+  el.setAttribute("aria-hidden", "false");
+
+  if (signHideTimer) clearTimeout(signHideTimer);
+  signHideTimer = setTimeout(() => {
+    hideGameAdSign();
+  }, GAME_SIGN_DURATION_MS);
+}
+
+function scheduleNextGameSign(delayMs = GAME_SIGN_INTERVAL_MS) {
+  if (signCycleTimer) {
+    clearTimeout(signCycleTimer);
+    signCycleTimer = null;
+  }
+  signCycleTimer = setTimeout(() => {
+    signCycleTimer = null;
+    if (S.uid && S.profile) {
+      showGameAdSign(t("ad.signTitle"), { manual: false });
+      scheduleNextGameSign(GAME_SIGN_INTERVAL_MS);
+    }
+  }, delayMs);
+}
+
+export function initGameAdSign() {
+  if (!signListenersReady && typeof document !== "undefined") {
+    signListenersReady = true;
+    const closeBtn = document.getElementById("game-ad-sign-close");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => hideGameAdSign());
+    }
+    on("modal", (open) => {
+      const el = getGameSignEl();
+      if (el) el.classList.toggle("modal-hidden", !!open);
+    });
+  }
+  lastProximitySignId = null;
+  signBannerRetryCount = 0;
+  scheduleNextGameSign(GAME_SIGN_FIRST_DELAY_MS);
+}
+
+export function stopGameAdSign() {
+  if (signCycleTimer) {
+    clearTimeout(signCycleTimer);
+    signCycleTimer = null;
+  }
+  lastProximitySignId = null;
+  hideGameAdSign();
+}
+
+export function syncGameAdSignProximity(me) {
+  if (!me || S.room !== "world") return;
+  let nearSign = null;
+  for (const s of AD_SIGNS) {
+    if (GRID[s.y]?.[s.x] !== T.GRASS) continue;
+    const d = Math.hypot(me.x - (s.x + 0.5), me.y - (s.y + 0.5));
+    if (d < 1.85) {
+      nearSign = s;
+      break;
+    }
+  }
+  if (nearSign) {
+    if (lastProximitySignId !== nearSign.id) {
+      lastProximitySignId = nearSign.id;
+      showGameAdSign(t(nearSign.labelKey), { manual: true });
+    }
+  } else if (lastProximitySignId) {
+    const prev = AD_SIGNS.find((s) => s.id === lastProximitySignId);
+    if (!prev || Math.hypot(me.x - (prev.x + 0.5), me.y - (prev.y + 0.5)) > 2.6) {
+      lastProximitySignId = null;
+    }
+  }
 }

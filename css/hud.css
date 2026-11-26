@@ -287,5 +287,112 @@ body.is-touch .chat-widget:not(.active) .chat-messages {
   100% { opacity: 0; transform: translate(-50%, -125%) scale(0.92); }
 }
 
+/* In-game appearing wooden signboard (AdsLab unit-1oylplyud) */
+.game-ad-sign {
+  position: absolute;
+  top: calc(12px + var(--safe-t));
+  left: 50%;
+  transform: translate(-50%, -18px) scale(0.96);
+  z-index: 64;
+  max-width: min(360px, calc(100vw - 120px));
+  background: linear-gradient(180deg, #3c2614 0%, #27180c 100%);
+  border: 2px solid var(--gold);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.58), inset 0 1px 0 rgba(255, 224, 130, 0.25);
+  padding: 6px 8px 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.game-ad-sign.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0) scale(1);
+}
+.game-ad-sign.modal-hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.game-ad-sign-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+  padding: 0 2px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--gold);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.game-ad-sign-close {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(245, 197, 24, 0.45);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+.game-ad-sign-close:hover {
+  background: var(--red);
+  border-color: #ff8a8a;
+}
+.game-ad-sign-body {
+  background: rgba(10, 18, 14, 0.85);
+  border: 1px solid rgba(245, 197, 24, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 48px;
+}
+#adslab-banner-unit-1oylplyud {
+  max-width: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#adslab-banner-unit-1oylplyud img,
+#adslab-banner-unit-1oylplyud iframe {
+  max-width: 100%;
+  display: block;
+}
+.game-ad-sign-posts {
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  bottom: -10px;
+  height: 10px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.game-ad-sign-posts span {
+  width: 8px;
+  height: 10px;
+  background: #4e311a;
+  border-left: 1px solid #754c29;
+  border-right: 1px solid #1e1107;
+  border-bottom: 2px solid #2b1a0c;
+}
+@media (max-width: 780px) {
+  .game-ad-sign {
+    top: calc(112px + var(--safe-t));
+    left: 10px;
+    max-width: calc(100vw - 74px);
+    transform: translate(0, -14px) scale(0.96);
+  }
+  .game-ad-sign.visible {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
 
 
