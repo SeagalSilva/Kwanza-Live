@@ -13,6 +13,8 @@ import forestRoutes from "./server/routes/forest.js";
 import mailRoutes from "./server/routes/mail.js";
 import dungeonRoutes from "./server/routes/dungeon.js";
 import ptcRoutes from "./server/routes/ptc.js";
+import captchaRoutes from "./server/routes/captcha.js";
+import restaurantRoutes from "./server/routes/restaurant.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +36,8 @@ app.use("/api/forest", forestRoutes);
 app.use("/api/mail", mailRoutes);
 app.use("/api/dungeon", dungeonRoutes);
 app.use("/api/ptc", ptcRoutes);
+app.use("/api/captcha", captchaRoutes);
+app.use("/api/restaurant", restaurantRoutes);
 
 // Expose runtime Firebase configuration dynamically
 app.get("/api/config.js", (req, res) => {

@@ -3,10 +3,19 @@
   "nextMsgId": 2,
   "workstationUsers": {
     "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1": {
-      "cycleId": 997608,
-      "depositedPP": 77,
+      "cycleId": 997615,
+      "depositedPP": 0,
       "readyToClaimBronze": 0,
-      "history": [],
+      "history": [
+        {
+          "cycleId": 997608,
+          "depositedPP": 77,
+          "bronzeEarned": 3,
+          "completedAt": 1795707146174,
+          "claimed": true,
+          "claimedAt": 1795707146177
+        }
+      ],
       "pendingTx": {},
       "pendingClaim": null,
       "dailyReadyToClaimBronze": 0,
@@ -25,8 +34,11 @@
         }
       ],
       "name": "SeagalSilva",
-      "firstDepositedAt": 1795695643289,
-      "claimedShiftCycles": {},
+      "firstDepositedAt": 0,
+      "claimedShiftCycles": {
+        "997608": 1795707146177,
+        "997613": 1795707146177
+      },
       "pendingShiftClaims": {},
       "claimedDailyDates": {
         "2026-11-23": 1795682091256
@@ -35,7 +47,7 @@
       "updatedAt": 1795695643289
     },
     "test_u1": {
-      "cycleId": 997608,
+      "cycleId": 997615,
       "depositedPP": 0,
       "readyToClaimBronze": 1,
       "history": [
@@ -71,7 +83,7 @@
       "pendingShiftClaims": {}
     },
     "test_u2": {
-      "cycleId": 997608,
+      "cycleId": 997615,
       "depositedPP": 0,
       "readyToClaimBronze": 2,
       "history": [
@@ -139,8 +151,8 @@
             "y": 12
           },
           "government": {
-            "x": 18,
-            "y": 4
+            "x": 21,
+            "y": 2
           },
           "gameMarket": {
             "x": 27,
@@ -165,6 +177,10 @@
           "dungeon": {
             "x": 42,
             "y": 12
+          },
+          "restaurant": {
+            "x": 13,
+            "y": 4
           }
         },
         "lands": {},
@@ -209,6 +225,10 @@
           "dungeon": {
             "x": 42,
             "y": 12
+          },
+          "restaurant": {
+            "x": 13,
+            "y": 4
           }
         },
         "lands": {},
@@ -228,8 +248,8 @@
           "y": 12
         },
         "government": {
-          "x": 18,
-          "y": 4
+          "x": 21,
+          "y": 2
         },
         "gameMarket": {
           "x": 27,
@@ -254,6 +274,10 @@
         "dungeon": {
           "x": 42,
           "y": 12
+        },
+        "restaurant": {
+          "x": 13,
+          "y": 4
         }
       },
       "lands": {},
@@ -2286,5 +2310,10 @@
         "cachedAt": 1795683721194
       }
     }
-  }
+  },
+  "restaurant": {
+    "playerBreadClaims": {},
+    "playerStock": {}
+  },
+  "usedCaptchaTokens": {}
 }

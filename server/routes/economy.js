@@ -2,6 +2,7 @@ import { Router } from "express";
 import crypto from "crypto";
 import { dbState, saveDb, isAdminEmail, MIN_SEED_PACK, normalizeMarketConfig } from "../db.js";
 import { recordDailyPoints } from "../services/dailyPool.js";
+import { verifyAdsLabToken } from "./captcha.js";
 
 const router = Router();
 
@@ -197,8 +198,14 @@ router.post("/confirm-sell-crops", (req, res) => {
 });
 
 // Validate coin exchange
-router.post("/validate-exchange", (req, res) => {
-  const { uid, from, to, balance } = req.body || {};
+router.post("/validate-exchange", async (req, res) => {
+  const { uid, from, to, balance, captchaToken } = req.body || {};
+  if (captchaToken) {
+    const captchaCheck = await verifyAdsLabToken(captchaToken);
+    if (!captchaCheck.valid) {
+      return res.status(403).json({ allowed: false, error: captchaCheck.error || "Captcha não resolvido" });
+    }
+  }
   const rule = EXCHANGES.find((x) => x.from === from && x.to === to);
   const bal = Math.floor(Number(balance));
   if (!uid || !rule || isNaN(bal) || bal < rule.cost) {

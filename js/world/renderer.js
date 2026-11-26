@@ -445,7 +445,7 @@ export function render(ctx, g) {
   const f = PUBLIC_FARM;
   pill(ctx, `🌾 ${t("place.publicFarm")}`, (f.x0 + f.w / 2) * TILE, (f.y0 - 0.45) * TILE, { size: 12, border: "#59d17a" });
   for (const b of BUILDINGS) {
-    const icon = b.id === "gameMarket" ? "🏪" : b.id === "bazaar" ? "🧺" : b.id === "government" ? "🏛️" : b.id === "casino" ? "🎰" : b.id === "mines" ? "⛏️" : b.id === "postOffice" ? "📮" : b.id === "dungeon" ? "🌲" : "🔨";
+    const icon = b.id === "gameMarket" ? "🏪" : b.id === "bazaar" ? "🧺" : b.id === "government" ? "🏛️" : b.id === "casino" ? "🎰" : b.id === "mines" ? "⛏️" : b.id === "postOffice" ? "📮" : b.id === "dungeon" ? "🌲" : b.id === "restaurant" ? "🍳" : "🔨";
     pill(ctx, `${icon} ${t(`place.${b.id}`)}`, (b.x + b.w / 2) * TILE, (b.y - 0.35) * TILE, { size: 12, border: b.id === "dungeon" ? "#59d17a" : "#f5c518" });
   }
   for (const s of AD_SIGNS) {

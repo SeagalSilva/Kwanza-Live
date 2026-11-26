@@ -49,7 +49,8 @@ export function createDefaultCityMap(base = null, fallbackCustomLands = []) {
     casino: { x: 30, y: 4 },
     mines: { x: 6, y: 4 },
     postOffice: { x: 38, y: 4 },
-    dungeon: { x: 42, y: 12 }
+    dungeon: { x: 42, y: 12 },
+    restaurant: { x: 13, y: 4 }
   };
   const src = base && typeof base === "object" ? base : {};
   return {
@@ -124,7 +125,12 @@ function createDefaultData() {
       sessions: {},
       pendingClaims: {},
       taskCache: {}
-    }
+    },
+    restaurant: {
+      playerBreadClaims: {},
+      playerStock: {}
+    },
+    usedCaptchaTokens: {}
   };
 }
 
@@ -206,7 +212,9 @@ function mergeDefaults(loaded) {
       sessions: loaded.ptcState?.sessions && typeof loaded.ptcState.sessions === "object" ? loaded.ptcState.sessions : {},
       pendingClaims: loaded.ptcState?.pendingClaims && typeof loaded.ptcState.pendingClaims === "object" ? loaded.ptcState.pendingClaims : {},
       taskCache: loaded.ptcState?.taskCache && typeof loaded.ptcState.taskCache === "object" ? loaded.ptcState.taskCache : {}
-    }
+    },
+    restaurant: loaded.restaurant && typeof loaded.restaurant === "object" ? loaded.restaurant : { playerBreadClaims: {}, playerStock: {} },
+    usedCaptchaTokens: loaded.usedCaptchaTokens && typeof loaded.usedCaptchaTokens === "object" ? loaded.usedCaptchaTokens : {}
   };
 }
 

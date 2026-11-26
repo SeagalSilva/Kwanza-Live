@@ -29,7 +29,7 @@ const ROCK_CONFIGS = {
   legendary: { name: "Lendária", cost: 15, minHits: 4, maxHits: 5, emoji: "🌟" }
 };
 
-const INITIAL_ROCKS_COUNT = 14;
+const MAX_ROCKS = 20;
 
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -44,17 +44,20 @@ function generateRandomTier() {
   return "legendary";
 }
 
-function createRock(id) {
+function createRock(id, index = 1) {
   const tier = generateRandomTier();
   const cfg = ROCK_CONFIGS[tier];
   const maxHp = randomInt(cfg.minHits, cfg.maxHits);
+  // Fixed predictable positions so all players see identical rocks
+  const fixedX = 2 + ((index * 5) % 21);
+  const fixedY = 3 + (Math.floor((index - 1) / 3) * 2) % 11;
   return {
     id,
     tier,
     hp: maxHp,
     maxHp,
-    x: randomInt(2, 22),
-    y: randomInt(3, 13),
+    x: fixedX,
+    y: fixedY,
     respawnAt: 0,
     spawnedAt: 0
   };
@@ -63,13 +66,15 @@ function createRock(id) {
 function ensureMinesState() {
   if (!dbState.mines) dbState.mines = { rocks: {} };
   const rocks = dbState.mines.rocks;
-  if (Object.keys(rocks).length === 0) {
-    for (let i = 1; i <= INITIAL_ROCKS_COUNT; i++) {
-      const rockId = `rock_${i}`;
-      rocks[rockId] = createRock(rockId);
+  let changed = false;
+  for (let i = 1; i <= MAX_ROCKS; i++) {
+    const rockId = `rock_${i}`;
+    if (!rocks[rockId]) {
+      rocks[rockId] = createRock(rockId, i);
+      changed = true;
     }
-    saveDb();
   }
+  if (changed) saveDb();
 }
 
 function rollLoot(tier) {
@@ -167,7 +172,7 @@ router.post("/hit", (req, res) => {
   let dailyPoints = null;
 
   if (rock.hp <= 0) {
-    rock.respawnAt = now + 35_000; // 35 seconds respawn
+    rock.respawnAt = now + 180_000; // 3 minutes respawn
     loot = rollLoot(rock.tier);
     if (loot.pp > 0) {
       const updated = recordDailyPoints(String(uid), name, loot.pp, now);

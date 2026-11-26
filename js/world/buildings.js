@@ -672,6 +672,24 @@ export function drawBuilding(ctx, b, time = 0) {
     ctx.fillRect(pbx + 3, pby + 7, 9, 3);
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(pbx + 4, pby + 13, 7, 5);
+  } else if (b.id === "restaurant") {
+    drawPitchedRoof25D(ctx, x, y, w, TILE * 1.12, b.roof || "#d35400", rightDepth);
+    draw3DAwning(ctx, x, y + TILE * 1.12, frontW, "#e67e22", "#ffffff");
+    draw3DDoor(ctx, doorCx, y + h, 24, 27, "#5a381e", true);
+    draw3DWindow(ctx, x + 20, y + TILE * 2.15, 20, 17, true);
+    draw3DWindow(ctx, x + frontW - 40, y + TILE * 2.15, 20, 17, true);
+
+    // Restaurant sign out front
+    ctx.fillStyle = "#4a2e17";
+    ctx.fillRect(x + frontW / 2 - 38, y + 10, 76, 17);
+    ctx.strokeStyle = "#f5c518";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x + frontW / 2 - 38, y + 10, 76, 17);
+    ctx.fillStyle = "#f5c518";
+    ctx.font = `700 8.5px ${UI_FONT}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("🍲 RESTAURANTE", x + frontW / 2, y + 18.5);
   } else {
     // Game Market & Bazaar: vibrant 2.5D merchant halls with crates & barrels
     drawPitchedRoof25D(ctx, x, y, w, TILE * 1.12, b.roof, rightDepth);

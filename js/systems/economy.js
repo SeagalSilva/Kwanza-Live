@@ -12,6 +12,7 @@ import { t } from "../i18n.js";
 import { toast } from "../ui/toast.js";
 import { commit, savePath } from "./db.js";
 import { playHarvest } from "./audio.js";
+import { requestCaptchaVerification } from "../ui/modals/captchaModal.js";
 
 let pendingSeedVisit = null;
 let lastFreeSeedStatus = null;
@@ -301,15 +302,18 @@ export async function exchange(from, to) {
   const rule = EXCHANGES.find((x) => x.from === from && x.to === to);
   if (!S.uid || !rule || bal(from) < rule.cost) { toast(t("msg.notEnough"), "bad"); return false; }
 
+  const captchaToken = await requestCaptchaVerification();
+  if (!captchaToken) return false;
+
   try {
     const valRes = await fetch("/api/economy/validate-exchange", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ uid: S.uid, from, to, balance: bal(from) })
+      body: JSON.stringify({ uid: S.uid, from, to, balance: bal(from), captchaToken })
     });
     const valData = await valRes.json();
     if (!valRes.ok || !valData.allowed) {
-      toast(t("msg.notEnough"), "bad");
+      toast(valData.error || t("msg.notEnough"), "bad");
       return false;
     }
   } catch (_) {}

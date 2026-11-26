@@ -42,7 +42,8 @@ const BASE_BUILDINGS = [
   { id: "casino",      x: 30, y: 4,  w: 6, h: 4, roof: "#b81d3a", body: "#2c1e2e" },
   { id: "mines",       x: 6,  y: 4,  w: 6, h: 4, roof: "#4f5d65", body: "#bfc9ca" },
   { id: "postOffice",  x: 38, y: 4,  w: 6, h: 4, roof: "#2980b9", body: "#fef9e7" },
-  { id: "dungeon",     x: 42, y: 12, w: 4, h: 4, roof: "#1e5631", body: "#354a3a" }
+  { id: "dungeon",     x: 42, y: 12, w: 4, h: 4, roof: "#1e5631", body: "#354a3a" },
+  { id: "restaurant",  x: 13, y: 4,  w: 5, h: 4, roof: "#d35400", body: "#f5e6cb" }
 ];
 
 export const BUILDINGS = [];

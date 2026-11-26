@@ -84,6 +84,7 @@ export default {
   "place.mines": "Public Mines",
   "place.postOffice": "Post Office",
   "place.dungeon": "Dungeon",
+  "place.restaurant": "Restaurant",
   "place.publicFarm": "Public Farm",
 
   // Government

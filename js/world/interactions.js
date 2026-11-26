@@ -58,6 +58,7 @@ import { openLand } from "../ui/modals/land.js";
 import { openGovernment } from "../ui/modals/government.js";
 import { openPostOffice } from "../ui/modals/postOffice.js";
 import { openDungeonModal } from "../ui/modals/dungeon.js";
+import { openRestaurantModal } from "../ui/modals/restaurant.js";
 import { playEnterBuilding } from "../systems/audio.js";
 import { showGameAdSign } from "../systems/ads.js";
 
@@ -181,6 +182,7 @@ export function perform(f) {
     if (f.id === "mines") return enterMinesRoom(me, exitMapEditMode);
     if (f.id === "postOffice") return openPostOffice();
     if (f.id === "dungeon") return openDungeonModal({ me, exitEditFn: exitMapEditMode });
+    if (f.id === "restaurant") return openRestaurantModal();
     return;
   }
   if (f.kind === "land") {

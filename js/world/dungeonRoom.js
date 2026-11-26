@@ -98,6 +98,14 @@ function resetAiStateForFloor(run) {
   if (!run?.enemies) return;
   for (const e of run.enemies) {
     enemyAiState.set(e.id, {
+      originX: e.x,
+      originY: e.y,
+      vx: 0,
+      vy: 0,
+      state: "patrol",
+      patrolTimer: Math.random() * 4,
+      patrolVx: 0,
+      patrolVy: 0,
       atkTimer: (e.atkCooldownMs || 1900) / 1000 * 0.75,
       facing: 1,
       lungeUntil: 0,
@@ -278,24 +286,87 @@ export function updateDungeon(dt, me, handleLeaveDungeon) {
     if (!e || e.hp <= 0) continue;
     let ai = enemyAiState.get(e.id);
     if (!ai) {
-      ai = { atkTimer: (e.atkCooldownMs || 1900) / 1000 * 0.7, facing: 1, lungeUntil: 0, lungeDx: 0, lungeDy: 0 };
+      ai = {
+        originX: e.x,
+        originY: e.y,
+        vx: 0,
+        vy: 0,
+        state: "patrol",
+        patrolTimer: Math.random() * 4,
+        patrolVx: 0,
+        patrolVy: 0,
+        atkTimer: (e.atkCooldownMs || 1900) / 1000 * 0.7,
+        facing: 1,
+        lungeUntil: 0,
+        lungeDx: 0,
+        lungeDy: 0
+      };
       enemyAiState.set(e.id, ai);
     }
 
     const ex = e.x + 0.5, ey = e.y + 0.5;
     const dx = me.x - ex, dy = me.y - ey;
     const dist = Math.hypot(dx, dy);
-    if (Math.abs(dx) > 0.05) ai.facing = dx >= 0 ? 1 : -1;
-
     const cooldownSec = (e.atkCooldownMs || 1900) / 1000;
 
-    // Aggro & chase player if within 7.5 tiles (never camp directly on Exit Door y >= 12.1)
-    if (dist <= 7.5 && dist > 1.15 && me.y < 12.2) {
-      const spd = (e.speed || 1.7) * dt;
-      const vx = (dx / dist) * spd;
-      const vy = (dy / dist) * spd;
-      if (canEnemyOccupy(e.x + vx, e.y, e.id, run, me)) e.x += vx;
-      if (canEnemyOccupy(e.x, e.y + vy, e.id, run, me)) e.y += vy;
+    // State machine: Aggro if player within 7.5 tiles and not camping exit door
+    if (dist <= 7.5 && me.y < 12.2) {
+      ai.state = "aggro";
+    } else if (ai.state === "aggro" && dist > 9.0) {
+      ai.state = "patrol";
+    }
+
+    let targetVx = 0;
+    let targetVy = 0;
+
+    if (ai.state === "aggro" && dist > 1.15) {
+      const spd = e.speed || 1.7;
+      targetVx = (dx / dist) * spd;
+      targetVy = (dy / dist) * spd;
+    } else if (ai.state === "patrol") {
+      ai.patrolTimer -= dt;
+      if (ai.patrolTimer <= 0) {
+        ai.patrolTimer = 3 + Math.random() * 4;
+        const angle = Math.random() * Math.PI * 2;
+        const pSpd = (e.speed || 1.7) * 0.4;
+        ai.patrolVx = Math.cos(angle) * pSpd;
+        ai.patrolVy = Math.sin(angle) * pSpd;
+      }
+      const distFromOrigin = Math.hypot(e.x - ai.originX, e.y - ai.originY);
+      if (distFromOrigin > 3.0) {
+        const odx = ai.originX - e.x;
+        const ody = ai.originY - e.y;
+        const odist = Math.max(0.01, Math.hypot(odx, ody));
+        targetVx = (odx / odist) * ((e.speed || 1.7) * 0.5);
+        targetVy = (ody / odist) * ((e.speed || 1.7) * 0.5);
+      } else {
+        targetVx = ai.patrolVx || 0;
+        targetVy = ai.patrolVy || 0;
+      }
+    }
+
+    // Velocity smoothing (LERP towards target velocity)
+    ai.vx += (targetVx - ai.vx) * Math.min(1, dt * 6);
+    ai.vy += (targetVy - ai.vy) * Math.min(1, dt * 6);
+
+    const nx = e.x + ai.vx * dt;
+    const ny = e.y + ai.vy * dt;
+
+    if (canEnemyOccupy(nx, e.y, e.id, run, me)) {
+      e.x = nx;
+    } else {
+      ai.vx = 0;
+    }
+    if (canEnemyOccupy(e.x, ny, e.id, run, me)) {
+      e.y = ny;
+    } else {
+      ai.vy = 0;
+    }
+
+    if (Math.abs(ai.vx) > 0.02) {
+      ai.facing = ai.vx >= 0 ? 1 : -1;
+    } else if (Math.abs(dx) > 0.05) {
+      ai.facing = dx >= 0 ? 1 : -1;
     }
 
     // Melee strike when within 1.65 tiles
