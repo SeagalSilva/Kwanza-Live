@@ -283,10 +283,10 @@ export async function triggerAdminInterstitial() {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  In-game Appearing Signboard Banners (AdsLab unit-1oylplyud)
+//  In-game Appearing Signboard Banners (AdsLab unit-n271qherh)
 // ─────────────────────────────────────────────────────────────
-const ADSLAB_BANNER_UNIT_ID = "unit-1oylplyud";
-const ADSLAB_BANNER_CONTAINER = "adslab-banner-unit-1oylplyud";
+const ADSLAB_BANNER_UNIT_ID = "unit-n271qherh";
+const ADSLAB_BANNER_CONTAINER = "adslab-banner-unit-n271qherh";
 const ADSLAB_BANNER_SCRIPT_URL = "https://serve.adslab.me/api/banner/js";
 const GAME_SIGN_FIRST_DELAY_MS = 9000;
 const GAME_SIGN_INTERVAL_MS = 75000;

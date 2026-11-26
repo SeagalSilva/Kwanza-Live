@@ -287,7 +287,7 @@ body.is-touch .chat-widget:not(.active) .chat-messages {
   100% { opacity: 0; transform: translate(-50%, -125%) scale(0.92); }
 }
 
-/* In-game appearing wooden signboard (AdsLab unit-1oylplyud) */
+/* In-game appearing wooden signboard (AdsLab unit-n271qherh) */
 .game-ad-sign {
   position: absolute;
   top: calc(12px + var(--safe-t));
@@ -352,15 +352,15 @@ body.is-touch .chat-widget:not(.active) .chat-messages {
   align-items: center;
   min-height: 48px;
 }
-#adslab-banner-unit-1oylplyud {
+#adslab-banner-unit-n271qherh {
   max-width: 100%;
   overflow: hidden;
   display: flex;
   justify-content: center;
   align-items: center;
 }
-#adslab-banner-unit-1oylplyud img,
-#adslab-banner-unit-1oylplyud iframe {
+#adslab-banner-unit-n271qherh img,
+#adslab-banner-unit-n271qherh iframe {
   max-width: 100%;
   display: block;
 }
