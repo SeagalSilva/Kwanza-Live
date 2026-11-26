@@ -101,8 +101,19 @@ function normalizeTask(raw, uid, userRec, now = Date.now()) {
 
   const icon = safeHttpUrl(raw?.icon || raw?.image || "");
   const duration = Math.max(MIN_DURATION_SEC, Math.min(MAX_DURATION_SEC, Math.round(Number(raw?.duration) || 10)));
-  const rewardUsd = Math.max(0, Number(raw?.reward_usd ?? raw?.reward) || 0);
-  const bronzeReward = Math.max(MIN_BRONZE_PER_TASK, Math.round(rewardUsd * USD_TO_BRONZE_RATE));
+  const rawReward = Math.max(0, Number(raw?.reward) || 0);
+  const rewardUsd = Math.max(0, Number(raw?.reward_usd) || 0);
+  const vsingular = String(raw?.vsingular || "$").trim();
+  const vplural = String(raw?.vplural || "$").trim();
+  const hasVirtualCurrency =
+    (vsingular && vsingular !== "$") ||
+    (vplural && vplural !== "$") ||
+    (rawReward > 0 && rewardUsd > 0 && Math.abs(rawReward - rewardUsd) > 1e-6);
+
+  const bronzeReward = hasVirtualCurrency
+    ? Math.max(1, Math.round(rawReward))
+    : Math.max(MIN_BRONZE_PER_TASK, Math.round((rewardUsd || rawReward) * USD_TO_BRONZE_RATE));
+
   const visitsPerUser = Math.max(0, Math.floor(Number(raw?.visitsPerUser) || 0));
   const cooldownMinutes = Math.max(0, Number(raw?.cooldownMinutes) || 0);
 
@@ -121,7 +132,10 @@ function normalizeTask(raw, uid, userRec, now = Date.now()) {
     url,
     icon,
     duration,
+    rawReward,
     rewardUsd,
+    vsingular: vsingular.slice(0, 32),
+    usingAdsLabVirtualCurrency: hasVirtualCurrency,
     bronzeReward,
     visitsPerUser,
     cooldownMinutes,
