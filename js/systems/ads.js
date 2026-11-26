@@ -1,36 +1,121 @@
 // ─────────────────────────────────────────────────────────────
 //  Mandatory Ad System & VIP Ad Exemption
-//  - Displays mandatory ad every 5–10 minutes
-//  - Uses FREE_SEED_LINK with 5s stay requirement (0 in-game rewards)
+//  - Displays mandatory AdSlab Interstitial every 10 minutes
+//  - Admin can summon the interstitial anytime by pressing "P"
 //  - Players can buy 1-month VIP exemption for 30 gold coins
 // ─────────────────────────────────────────────────────────────
 import { S, bal, isAdExempt } from "../state.js";
-import { openModal, closeModal } from "../ui/modal.js";
-import { t, fmtNum } from "../i18n.js";
-import { esc } from "../utils.js";
+import { t } from "../i18n.js";
 import { toast } from "../ui/toast.js";
 import { emit } from "../bus.js";
 import { commit, savePath } from "./db.js";
 import { increment } from "../firebase.js";
+import { isAdmin } from "./government.js";
 import {
-  FREE_SEED_LINK,
+  ADSLAB_INT_ID,
+  ADSLAB_SDK_URL,
   AD_MIN_INTERVAL_MS,
   AD_MAX_INTERVAL_MS,
-  AD_REQUIRED_STAY_MS,
-  AD_EXEMPTION_COST_GOLD,
-  AD_EXEMPTION_DURATION_MS
+  AD_EXEMPTION_COST_GOLD
 } from "../config.js";
 
 let adTimer = null;
-let isAdModalShowing = false;
+let sdkLoadPromise = null;
+let interstitialBusy = false;
 
 export function getRandomAdInterval() {
+  if (AD_MAX_INTERVAL_MS <= AD_MIN_INTERVAL_MS) return AD_MIN_INTERVAL_MS;
   return Math.floor(Math.random() * (AD_MAX_INTERVAL_MS - AD_MIN_INTERVAL_MS + 1)) + AD_MIN_INTERVAL_MS;
+}
+
+function waitForInterstitialFn(timeoutMs = 4000) {
+  return new Promise((resolve) => {
+    if (typeof window.adslabShowInterstitial === "function") {
+      resolve(true);
+      return;
+    }
+    const deadline = Date.now() + timeoutMs;
+    const iv = setInterval(() => {
+      if (typeof window.adslabShowInterstitial === "function") {
+        clearInterval(iv);
+        resolve(true);
+      } else if (Date.now() >= deadline) {
+        clearInterval(iv);
+        resolve(false);
+      }
+    }, 100);
+  });
+}
+
+export function ensureAdSlabSdk(uid = S.uid) {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return Promise.resolve(false);
+  }
+
+  window.ADSLAB_INT = ADSLAB_INT_ID;
+  window.ADSLAB_USER = String(uid || S.uid || "guest");
+
+  if (typeof window.adslabShowInterstitial === "function") {
+    return Promise.resolve(true);
+  }
+
+  if (sdkLoadPromise) {
+    return sdkLoadPromise;
+  }
+
+  sdkLoadPromise = new Promise((resolve) => {
+    const existing = document.querySelector(`script[src="${ADSLAB_SDK_URL}"]`);
+    if (existing) {
+      if (existing.dataset.adslabFailed === "1") {
+        existing.remove();
+      } else if (existing.dataset.adslabLoaded === "1") {
+        waitForInterstitialFn().then((ok) => {
+          if (!ok) sdkLoadPromise = null;
+          resolve(ok);
+        });
+        return;
+      } else {
+        existing.addEventListener("load", () => {
+          existing.dataset.adslabLoaded = "1";
+          waitForInterstitialFn().then((ok) => {
+            if (!ok) sdkLoadPromise = null;
+            resolve(ok);
+          });
+        }, { once: true });
+        existing.addEventListener("error", () => {
+          existing.dataset.adslabFailed = "1";
+          sdkLoadPromise = null;
+          resolve(false);
+        }, { once: true });
+        return;
+      }
+    }
+
+    const s = document.createElement("script");
+    s.src = ADSLAB_SDK_URL;
+    s.async = true;
+    s.onload = () => {
+      s.dataset.adslabLoaded = "1";
+      waitForInterstitialFn().then((ok) => {
+        if (!ok) sdkLoadPromise = null;
+        resolve(ok);
+      });
+    };
+    s.onerror = () => {
+      s.dataset.adslabFailed = "1";
+      sdkLoadPromise = null;
+      resolve(false);
+    };
+    document.head.appendChild(s);
+  });
+
+  return sdkLoadPromise;
 }
 
 export function startAdScheduler() {
   stopAdScheduler();
   if (S.uid) {
+    ensureAdSlabSdk(S.uid);
     verifyAdExemptionOnLogin(S.uid);
   }
   scheduleNextAd();
@@ -82,10 +167,6 @@ export function scheduleNextAd(customDelayMs = null) {
   }, delay);
 }
 
-export function isAdModalActive() {
-  return isAdModalShowing;
-}
-
 export function formatExemptionTime(untilMs) {
   if (!untilMs || untilMs <= Date.now()) return null;
   const d = new Date(untilMs);
@@ -128,9 +209,6 @@ export async function buyAdExemption() {
       emit("save");
       emit("adExemptChanged", data.exemptUntil);
       toast(t("ad.exemptBought"), "good", 6000);
-      if (isAdModalShowing) {
-        closeModal(true);
-      }
       return true;
     }
 
@@ -147,6 +225,32 @@ export async function buyAdExemption() {
   return false;
 }
 
+async function showInterstitialAd({ force = false } = {}) {
+  if (interstitialBusy) return false;
+  interstitialBusy = true;
+  try {
+    const uid = S.uid || (force ? "admin" : "guest");
+    const ready = await ensureAdSlabSdk(uid);
+    window.ADSLAB_INT = ADSLAB_INT_ID;
+    window.ADSLAB_USER = String(uid);
+
+    if (ready && typeof window.adslabShowInterstitial === "function") {
+      window.dispatchEvent(new Event("blur"));
+      await Promise.resolve(window.adslabShowInterstitial());
+      return true;
+    }
+
+    toast(t("ad.sdkUnavailable"), "bad");
+    return false;
+  } catch (err) {
+    console.warn("[ads] Interstitial call failed:", err);
+    toast(t("ad.sdkUnavailable"), "bad");
+    return false;
+  } finally {
+    interstitialBusy = false;
+  }
+}
+
 export async function triggerMandatoryAd() {
   // Always double-check VIP exemption against server & Firebase before showing ad
   if (S.uid && !isAdExempt()) {
@@ -157,178 +261,22 @@ export async function triggerMandatoryAd() {
     scheduleNextAd();
     return;
   }
-  // If not logged in or during sensitive onboarding/spin, delay briefly
+  // If not logged in or during sensitive roulette spin, delay briefly
   if (!S.uid || !S.profile) {
     scheduleNextAd(30000);
     return;
   }
-  if (S.casino?.roulette?.lockedBet > 0 || isAdModalShowing) {
+  if (S.casino?.roulette?.lockedBet > 0) {
     scheduleNextAd(15000);
     return;
   }
 
-  openMandatoryAdModal();
+  const shown = await showInterstitialAd({ force: false });
+  // Mandatory: if SDK failed/blocked, retry in 60s; otherwise wait the 10-minute interval
+  scheduleNextAd(shown ? null : 60000);
 }
 
-export function openMandatoryAdModal() {
-  if (isAdExempt()) return;
-  isAdModalShowing = true;
-
-  let adClicked = false;
-  let clickTime = 0;
-  let verified = false;
-  let ticker = null;
-
-  openModal({
-    title: () => t("ad.title"),
-    closable: false,
-    events: ["save", "lang"],
-    onClose() {
-      if (ticker) {
-        clearInterval(ticker);
-        ticker = null;
-      }
-      isAdModalShowing = false;
-      scheduleNextAd();
-    },
-    render(body, api) {
-      const now = Date.now();
-      const elapsed = adClicked ? (now - clickTime) : 0;
-      const remainingSec = Math.max(0, Math.ceil((AD_REQUIRED_STAY_MS - elapsed) / 1000));
-      const progressPercent = Math.min(100, Math.round((elapsed / AD_REQUIRED_STAY_MS) * 100));
-
-      if (adClicked && elapsed >= AD_REQUIRED_STAY_MS && !verified) {
-        verified = true;
-        if (ticker) {
-          clearInterval(ticker);
-          ticker = null;
-        }
-      }
-
-      const goldBal = bal("gold");
-      const canBuyExempt = goldBal >= AD_EXEMPTION_COST_GOLD;
-
-      let timerStatusHtml = "";
-      if (!adClicked) {
-        timerStatusHtml = `
-          <div class="ad-status-box waiting">
-            <span>👆</span>
-            <div>${esc(t("ad.instructionPrompt"))}</div>
-          </div>`;
-      } else if (!verified) {
-        timerStatusHtml = `
-          <div class="ad-status-box in-progress">
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-              <span>⏳ ${esc(t("ad.verifying"))}</span>
-              <strong style="font-size: 14px; color: var(--gold);">${remainingSec}s</strong>
-            </div>
-            <div class="ad-progress-bar">
-              <div class="ad-progress-fill" style="width: ${progressPercent}%;"></div>
-            </div>
-          </div>`;
-      } else {
-        timerStatusHtml = `
-          <div class="ad-status-box verified">
-            <span>✅</span>
-            <strong>${esc(t("ad.verifiedNotice"))}</strong>
-          </div>`;
-      }
-
-      body.innerHTML = `
-        <div class="ad-modal-wrap">
-          <div class="ad-notice-banner">
-            <span class="ad-notice-icon">📢</span>
-            <div class="ad-notice-text">
-              <b>${esc(t("ad.noticeTitle"))}</b>
-              <p>${esc(t("ad.noticeDesc"))}</p>
-            </div>
-          </div>
-
-          <div class="ad-action-card">
-            <div class="ad-card-head">
-              <span class="ad-icon">🎬</span>
-              <div>
-                <strong>${esc(t("ad.sponsorTitle"))}</strong>
-                <small>${esc(t("ad.sponsorSub"))}</small>
-              </div>
-            </div>
-
-            <a id="ad-link-btn" class="btn gold large ad-link-cta" href="${esc(FREE_SEED_LINK)}" target="_blank" rel="noopener noreferrer">
-              <span>🌐 ${esc(t("ad.openLinkBtn"))}</span>
-              <span class="ad-external-arrow">↗</span>
-            </a>
-
-            ${timerStatusHtml}
-
-            <button id="ad-continue-btn" type="button" class="btn good large ad-continue-cta" ${verified ? "" : "disabled"}>
-              🎮 ${esc(t("ad.continueBtn"))}
-            </button>
-          </div>
-
-          <div class="ad-exempt-vip-card">
-            <div class="ad-vip-header">
-              <div class="ad-vip-title-group">
-                <span class="ad-vip-crown">👑</span>
-                <div>
-                  <strong class="ad-vip-title">${esc(t("ad.exemptTitle"))}</strong>
-                  <div class="ad-vip-subtitle">${esc(t("ad.exemptDesc"))}</div>
-                </div>
-              </div>
-              <span class="ad-vip-tag">30 DIAS</span>
-            </div>
-
-            <div class="ad-vip-footer">
-              <div class="ad-vip-balance">
-                <small>${esc(t("ad.yourGold"))}</small>
-                <span>${fmtNum(goldBal)} 🥇</span>
-              </div>
-              <button id="ad-buy-vip-btn" type="button" class="btn gold small" ${canBuyExempt ? "" : "disabled"}>
-                👑 ${esc(t("ad.buyExemptBtn", { cost: AD_EXEMPTION_COST_GOLD }))}
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-
-      // Event handlers
-      const linkBtn = body.querySelector("#ad-link-btn");
-      if (linkBtn) {
-        linkBtn.onclick = () => {
-          if (!adClicked) {
-            adClicked = true;
-            clickTime = Date.now();
-            if (ticker) clearInterval(ticker);
-            ticker = setInterval(() => {
-              const el = Date.now() - clickTime;
-              if (el >= AD_REQUIRED_STAY_MS) {
-                verified = true;
-                clearInterval(ticker);
-                ticker = null;
-              }
-              api.repaint();
-            }, 300);
-            api.repaint();
-          }
-        };
-      }
-
-      const contBtn = body.querySelector("#ad-continue-btn");
-      if (contBtn) {
-        contBtn.onclick = () => {
-          if (verified) {
-            api.close();
-          }
-        };
-      }
-
-      const buyVipBtn = body.querySelector("#ad-buy-vip-btn");
-      if (buyVipBtn) {
-        buyVipBtn.onclick = () => {
-          if (canBuyExempt) {
-            buyAdExemption();
-          }
-        };
-      }
-    }
-  });
+export async function triggerAdminInterstitial() {
+  if (!isAdmin()) return false;
+  return showInterstitialAd({ force: true });
 }

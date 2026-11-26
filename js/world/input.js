@@ -2,6 +2,8 @@
 import { emit } from "../bus.js";
 import { CROP_IDS } from "../data/crops.js";
 import { isModalOpen, closeModal } from "../ui/modal.js";
+import { isAdmin } from "../systems/government.js";
+import { triggerAdminInterstitial } from "../systems/ads.js";
 
 export const input = { up: false, down: false, left: false, right: false };
 
@@ -26,6 +28,11 @@ export function initInput(canvas, { onInteract, onTap, onPointerDown, onPointerM
   window.addEventListener("keydown", (e) => {
     if (!active || typing(e)) return;
     if (e.code === "Escape") { if (isModalOpen()) closeModal(); return; }
+    if ((e.code === "KeyP" || e.key?.toLowerCase() === "p") && !e.repeat && isAdmin()) {
+      e.preventDefault();
+      triggerAdminInterstitial();
+      return;
+    }
     if (isModalOpen()) return;
     if (KEYS[e.code]) { input[KEYS[e.code]] = true; e.preventDefault(); return; }
     if (e.code === "KeyE" || e.code === "Space" || e.code === "Enter") { e.preventDefault(); if (!e.repeat) onInteract(); return; }
