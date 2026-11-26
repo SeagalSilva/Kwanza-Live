@@ -12,6 +12,7 @@ import { renderCasinoRoom } from "./casinoRoom.js";
 import { renderMinesRoom } from "./minesRoom.js";
 import { renderDungeonRoom } from "./dungeonRoom.js";
 import { renderWorkstationRoom } from "./workstationRoom.js";
+import { renderForestRoom } from "./forestRoom.js";
 import { drawLandFloor, drawLandFenceDecor, pushLandEntities } from "./landVisuals.js";
 import { drawBuilding } from "./buildings.js";
 import { hash2, colorFromString } from "../utils.js";
@@ -275,6 +276,44 @@ function drawAdBillboard(ctx, sign, time, focused) {
   ctx.strokeRect(bx, by, bw, bh);
 }
 
+function drawForestExitArch(ctx, fe, time, focused) {
+  const x = fe.tx0 * TILE;
+  const y = fe.ty0 * TILE;
+  const h = TILE * 2;
+  // Warm trail glow leading east off the map
+  const glow = ctx.createLinearGradient(x, y, x + TILE * 2, y);
+  glow.addColorStop(0, "rgba(89, 209, 122, 0)");
+  glow.addColorStop(1, focused ? "rgba(130, 255, 165, 0.42)" : "rgba(89, 209, 122, 0.25)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(x, y, TILE * 2, h);
+
+  // Animated directional arrow on path
+  const slide = Math.sin(time * 3.5) * 3;
+  ctx.fillStyle = "rgba(255, 240, 175, 0.88)";
+  ctx.beginPath();
+  ctx.moveTo(x + TILE * 1.35 + slide, y + TILE);
+  ctx.lineTo(x + TILE * 1.0 + slide, y + TILE - 7);
+  ctx.lineTo(x + TILE * 1.0 + slide, y + TILE + 7);
+  ctx.closePath();
+  ctx.fill();
+
+  // 2.5D wooden gate pillars flanking the road
+  const drawPost = (px, py) => {
+    ctx.fillStyle = "rgba(0,0,0,0.28)";
+    ctx.beginPath(); ctx.ellipse(px + 5, py + 12, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#4d2f18";
+    ctx.fillRect(px, py - 14, 8, 25);
+    ctx.fillStyle = "#7a4d28";
+    ctx.fillRect(px, py - 14, 4.5, 25);
+    // Warm hanging lantern
+    const pulse = 0.78 + Math.sin(time * 5 + py) * 0.2;
+    ctx.fillStyle = `rgba(255, 213, 79, ${pulse.toFixed(2)})`;
+    ctx.fillRect(px + 1.5, py - 10, 5, 5);
+  };
+  drawPost(x + 2, y - 2);
+  drawPost(x + 2, y + h - 8);
+}
+
 // ── main render ──────────────────────────────────────────────
 /**
  * g = { me, others: [{p, id}], focus, time }
@@ -300,6 +339,12 @@ export function render(ctx, g) {
   }
   if (S.room === "workstation") {
     return renderWorkstationRoom(ctx, view, g, {
+      sanitizeLook,
+      myLook: sanitizeLook(S.profile?.look)
+    });
+  }
+  if (S.room === "forest") {
+    return renderForestRoom(ctx, view, g, {
       sanitizeLook,
       myLook: sanitizeLook(S.profile?.look)
     });

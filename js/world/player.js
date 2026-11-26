@@ -6,6 +6,7 @@ import { isCasinoBlocked } from "./casinoRoom.js";
 import { isMinesBlocked } from "./minesRoom.js";
 import { isDungeonBlocked } from "./dungeonRoom.js";
 import { isWorkstationBlocked } from "./workstationRoom.js";
+import { isForestBlocked } from "./forestRoom.js";
 
 export const DIRV = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 
@@ -38,7 +39,9 @@ export const blocked = (tx, ty) =>
         ? isDungeonBlocked(tx, ty)
         : S.room === "workstation"
           ? isWorkstationBlocked(tx, ty)
-          : (isBlockedStatic(tx, ty) || gateClosed(tx, ty));
+          : S.room === "forest"
+            ? isForestBlocked(tx, ty)
+            : (isBlockedStatic(tx, ty) || gateClosed(tx, ty));
 
 function hits(px, py) {
   const r = 0.26, h = 0.18;

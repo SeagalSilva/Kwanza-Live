@@ -130,24 +130,41 @@ router.post("/validate-buy-seeds", (req, res) => {
   });
 });
 
-// Validate whether selling crops for Pool Points is permitted and issue a confirmation token
+const RESOURCE_SELL_PP = {
+  ore_coal: 3,
+  ore_copper: 5,
+  ore_iron: 9,
+  ore_silver: 16,
+  ore_gold: 28,
+  ore_diamond: 55,
+  wood_pine: 3,
+  wood_oak: 6,
+  wood_mahogany: 14,
+  wood_elder: 30
+};
+
+// Validate whether selling crops or gathered resources (ores/wood) for Pool Points is permitted and issue a confirmation token
 router.post("/validate-sell-crops", (req, res) => {
-  const { uid, cropId, qty, ownedQty } = req.body || {};
+  const { uid, cropId, itemId, qty, ownedQty } = req.body || {};
   const cfg = ensureMarketConfig();
-  const c = cfg[cropId];
+  const c = cropId ? cfg[cropId] : null;
+  const resSell = itemId ? RESOURCE_SELL_PP[itemId] : null;
+  const unitSell = c ? c.sell : resSell;
+
   const n = Math.floor(Number(qty));
   const owned = Math.floor(Number(ownedQty));
-  if (!uid || !c || isNaN(n) || n < 1 || isNaN(owned) || owned < n) {
-    return res.status(400).json({ allowed: false, error: "Invalid crop sale" });
+  if (!uid || !unitSell || isNaN(n) || n < 1 || isNaN(owned) || owned < n) {
+    return res.status(400).json({ allowed: false, error: "Invalid item sale" });
   }
-  const gain = c.sell * n;
+  const gain = unitSell * n;
   if (!dbState.dailyPool) dbState.dailyPool = { days: {}, pendingSellTx: {} };
   if (!dbState.dailyPool.pendingSellTx) dbState.dailyPool.pendingSellTx = {};
 
   const txId = crypto.randomUUID();
   dbState.dailyPool.pendingSellTx[txId] = {
     uid: String(uid),
-    cropId,
+    cropId: cropId || null,
+    itemId: itemId || (cropId ? `crop_${cropId}` : null),
     qty: n,
     gain,
     createdAt: Date.now()
@@ -160,7 +177,7 @@ router.post("/validate-sell-crops", (req, res) => {
   }
   saveDb();
 
-  res.json({ allowed: true, txId, gain, qty: n, cropId });
+  res.json({ allowed: true, txId, gain, qty: n, cropId: cropId || null, itemId: itemId || null });
 });
 
 // Record daily accumulated PP after crop sale commits in Firebase

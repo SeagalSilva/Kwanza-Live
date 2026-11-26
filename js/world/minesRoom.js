@@ -265,6 +265,14 @@ export async function performMinesAction(f, handleLeaveMines) {
           updates[savePath(S.uid, "wallet/pp")] = increment(loot.pp);
           msgs.push(`+${loot.pp} PP`);
         }
+        if (loot.ores) {
+          for (const [oreId, qty] of Object.entries(loot.ores)) {
+            if (qty > 0) {
+              updates[savePath(S.uid, `inv/${oreId}`)] = increment(qty);
+              msgs.push(`+${qty} ${itemIcon(oreId)} ${itemName(oreId)}`);
+            }
+          }
+        }
         if (loot.seeds) {
           for (const [seedId, qty] of Object.entries(loot.seeds)) {
             if (qty > 0) {

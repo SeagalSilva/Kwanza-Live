@@ -4,12 +4,12 @@ import { recordDailyPoints } from "../services/dailyPool.js";
 
 const router = Router();
 
-// Rock tiers configuration (ONLY Pool Points and seeds):
-// - common: cost 3 energy, 1-3 hits. Loot: 2-10 PP and 35% chance of 1 random seed.
-// - uncommon: cost 5 energy, 1-4 hits. Loot: 8-22 PP and 1 random seed.
-// - rare: cost 7 energy, 2-5 hits. Loot: 25-55 PP and 2 random seeds.
-// - epic: cost 10 energy, 4-5 hits. Loot: 100-250 PP and 4 random seeds.
-// - legendary: cost 15 energy, 4-5 hits. Loot: 300-500 PP and 10 random seeds.
+// Rock tiers configuration (Pool Points, named ores, and seeds):
+// - common: cost 3 energy, 1-3 hits. Loot: 2-10 PP, 35% chance of 1 random seed + Carvão / Minério de Cobre.
+// - uncommon: cost 5 energy, 1-4 hits. Loot: 8-22 PP, 1 random seed + Minério de Cobre / Carvão / Minério de Ferro.
+// - rare: cost 7 energy, 2-5 hits. Loot: 25-55 PP, 2 random seeds + Minério de Ferro + Minério de Prata.
+// - epic: cost 10 energy, 4-5 hits. Loot: 100-250 PP, 4 random seeds + Minério de Prata + Minério de Ouro.
+// - legendary: cost 15 energy, 4-5 hits. Loot: 300-500 PP, 10 random seeds + Minério de Ouro + Diamante Bruto.
 
 const CROP_IDS = ["corn", "beans", "peanut", "cassava", "banana", "pineapple"];
 const SEED_MAP = {
@@ -73,7 +73,7 @@ function ensureMinesState() {
 }
 
 function rollLoot(tier) {
-  const loot = { pp: 0, seeds: {} };
+  const loot = { pp: 0, seeds: {}, ores: {} };
   const addSeed = (count = 1) => {
     for (let i = 0; i < count; i++) {
       const cropId = CROP_IDS[Math.floor(Math.random() * CROP_IDS.length)];
@@ -81,22 +81,41 @@ function rollLoot(tier) {
       loot.seeds[seedId] = (loot.seeds[seedId] || 0) + 1;
     }
   };
+  const addOre = (oreId, count = 1) => {
+    if (count > 0) {
+      loot.ores[oreId] = (loot.ores[oreId] || 0) + count;
+    }
+  };
 
   if (tier === "common") {
     loot.pp = randomInt(2, 10);
     if (Math.random() < 0.35) addSeed(1);
+    if (Math.random() < 0.62) {
+      addOre("ore_coal", randomInt(1, 2));
+    } else {
+      addOre("ore_copper", 1);
+    }
   } else if (tier === "uncommon") {
     loot.pp = randomInt(8, 22);
     addSeed(1);
+    addOre("ore_copper", randomInt(1, 2));
+    if (Math.random() < 0.5) addOre("ore_coal", 1);
+    if (Math.random() < 0.45) addOre("ore_iron", 1);
   } else if (tier === "rare") {
     loot.pp = randomInt(25, 55);
     addSeed(2);
+    addOre("ore_iron", randomInt(1, 2));
+    addOre("ore_silver", 1);
   } else if (tier === "epic") {
     loot.pp = randomInt(100, 250);
     addSeed(4);
+    addOre("ore_silver", 2);
+    addOre("ore_gold", randomInt(1, 2));
   } else if (tier === "legendary") {
     loot.pp = randomInt(300, 500);
     addSeed(10);
+    addOre("ore_gold", 2);
+    addOre("ore_diamond", randomInt(1, 2));
   }
   return loot;
 }

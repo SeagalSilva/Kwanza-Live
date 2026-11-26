@@ -2,7 +2,7 @@
 import { S } from "../state.js";
 import { t } from "../i18n.js";
 import { me, DIRV } from "./player.js";
-import { farmIndex, BUILDINGS, LAND_META, AD_SIGNS, GRID, T, buildingAtTile, landAtTile, adSignAtTile } from "./map.js";
+import { farmIndex, BUILDINGS, LAND_META, AD_SIGNS, GRID, T, buildingAtTile, landAtTile, adSignAtTile, getForestExit } from "./map.js";
 import { exitMapEditMode } from "./editor.js";
 import {
   enterCasinoRoom,
@@ -39,6 +39,16 @@ import {
   handleWorkstationTap,
   tickWorkstationPending
 } from "./workstationRoom.js";
+import {
+  enterForestRoom,
+  exitForestRoom,
+  canAutoEnterForest,
+  computeForestFocus,
+  focusLabelForest,
+  performForestAction,
+  handleForestTap,
+  tickForestPending
+} from "./forestRoom.js";
 import { interactTile, tileData, cropState, canUseScope, landModeOf } from "../systems/farming.js";
 import { CROPS } from "../data/crops.js";
 import { releaseSlotMachine, forfeitRouletteFreeSpins } from "../systems/casino.js";
@@ -75,12 +85,17 @@ function handleLeaveWorkstation() {
   exitWorkstationRoom(me, b);
 }
 
+function handleLeaveForest() {
+  exitForestRoom(me);
+}
+
 /** Best thing to interact with right now (or null). */
 export function computeFocus() {
   if (S.room === "casino") return computeCasinoFocus(me);
   if (S.room === "mines") return computeMinesFocus(me);
   if (S.room === "dungeon") return computeDungeonFocus(me);
   if (S.room === "workstation") return computeWorkstationFocus(me);
+  if (S.room === "forest") return computeForestFocus(me);
 
   const v = DIRV[me.dir];
   const probes = [[me.x + v[0] * 0.8, me.y + v[1] * 0.8], [me.x, me.y]];
@@ -104,6 +119,12 @@ export function computeFocus() {
     if (GRID[s.y]?.[s.x] !== T.GRASS) continue;
     if (Math.hypot(me.x - (s.x + 0.5), me.y - (s.y + 0.5)) < 2.1) return { kind: "adSign", id: s.id, labelKey: s.labelKey };
   }
+  {
+    const fe = getForestExit();
+    if (Math.hypot(me.x - fe.portalX, me.y - fe.portalY) < 2.3) {
+      return { kind: "forestExit" };
+    }
+  }
   return null;
 }
 
@@ -113,9 +134,11 @@ export function focusLabel(f) {
   if (S.room === "mines") return focusLabelMines(f);
   if (S.room === "dungeon") return focusLabelDungeon(f);
   if (S.room === "workstation") return focusLabelWorkstation(f);
+  if (S.room === "forest") return focusLabelForest(f);
   if (f.kind === "building") return t("act.open", { place: t(`place.${f.id}`) });
   if (f.kind === "land") return t("act.viewLand", { id: f.id });
   if (f.kind === "adSign") return `🪧 ${t("ad.signInspect")}`;
+  if (f.kind === "forestExit") return `🌲 ${t("forest.enterFromTown")}`;
   const tile = tileData(f.scope, f.key);
   const st = cropState(tile);
   if (st.stage === "empty") {
@@ -140,6 +163,13 @@ export function perform(f) {
   }
   if (S.room === "workstation") {
     return performWorkstationAction(f, handleLeaveWorkstation);
+  }
+  if (S.room === "forest") {
+    return performForestAction(f, handleLeaveForest);
+  }
+  if (f.kind === "forestExit") {
+    enterForestRoom(me, exitMapEditMode);
+    return;
   }
   if (f.kind === "building") {
     playEnterBuilding();
@@ -174,6 +204,7 @@ export function handleTap(wx, wy) {
   if (S.room === "mines") return handleMinesTap(wx, wy, me);
   if (S.room === "dungeon") return handleDungeonTap(wx, wy, me);
   if (S.room === "workstation") return handleWorkstationTap(wx, wy, me);
+  if (S.room === "forest") return handleForestTap(wx, wy, me);
 
   const tx = Math.floor(wx), ty = Math.floor(wy), key = `${tx}_${ty}`;
 
@@ -194,6 +225,15 @@ export function handleTap(wx, wy) {
   const sign = adSignAtTile(tx, ty);
   if (sign) { me.target = { x: sign.x + 0.5, y: sign.y + 1.3 }; me.pending = { kind: "adSign", id: sign.id }; return; }
 
+  {
+    const fe = getForestExit();
+    if (tx >= fe.tx0 - 0.5 && (ty === fe.ty0 || ty === fe.ty1)) {
+      me.target = { x: fe.portalX, y: fe.portalY };
+      me.pending = { kind: "forestExit" };
+      return;
+    }
+  }
+
   me.target = { x: wx, y: wy };
   me.pending = null;
 }
@@ -204,6 +244,7 @@ export function tickPending() {
   if (S.room === "mines") return tickMinesPending(me, handleLeaveMines);
   if (S.room === "dungeon") return tickDungeonPending(me, handleLeaveDungeon);
   if (S.room === "workstation") return tickWorkstationPending(me, handleLeaveWorkstation);
+  if (S.room === "forest") return tickForestPending(me, handleLeaveForest);
 
   const p = me.pending;
   if (!p) return;
@@ -211,6 +252,7 @@ export function tickPending() {
   if (p.kind === "tile") { px = p.tx + 0.5; py = p.ty + 0.5; range = 1.5; }
   else if (p.kind === "building") { const b = BUILDINGS.find((x) => x.id === p.id); px = b.front.x; py = b.front.y; range = 0.9; }
   else if (p.kind === "adSign") { const s = AD_SIGNS.find((x) => x.id === p.id); px = s.x + 0.5; py = s.y + 0.5; range = 1.8; }
+  else if (p.kind === "forestExit") { const fe = getForestExit(); px = fe.portalX; py = fe.portalY; range = 1.1; }
   else { const l = LAND_META.find((x) => x.id === p.id); px = l.sign.x; py = l.sign.y; range = 1.6; }
   if (Math.hypot(me.x - px, me.y - py) <= range) {
     me.pending = null; me.target = null;

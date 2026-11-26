@@ -6,7 +6,8 @@ import { increment } from "../firebase.js";
 import { FREE_SEED_STAY_MS } from "../config.js";
 import { CROPS, MIN_SEED_PACK, applyMarketConfig } from "../data/crops.js";
 import { EXCHANGES } from "../data/currencies.js";
-import { seedId, cropItemId } from "../data/items.js";
+import { RESOURCES } from "../data/resources.js";
+import { seedId, cropItemId, itemName } from "../data/items.js";
 import { t } from "../i18n.js";
 import { toast } from "../ui/toast.js";
 import { commit, savePath } from "./db.js";
@@ -237,6 +238,61 @@ export async function sellCrops(cropId, qty) {
       } catch (_) {}
     }
     toast(t("msg.soldCrops", { n: qty, crop: t(`crop.${cropId}`), gain }), "good");
+  }
+  return ok;
+}
+
+export async function sellResource(itemId, qty) {
+  const resCfg = RESOURCES[itemId];
+  if (!S.uid || !resCfg) return false;
+  const owned = inv(itemId);
+  qty = Math.min(qty, owned);
+  if (qty < 1) return false;
+
+  let sellTxId = null;
+  let gain = resCfg.sellPp * qty;
+  try {
+    const valRes = await fetch("/api/economy/validate-sell-crops", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uid: S.uid, itemId, qty, ownedQty: owned })
+    });
+    const valData = await valRes.json();
+    if (!valRes.ok || !valData.allowed || !valData.txId) {
+      toast(t("msg.notEnough"), "bad");
+      return false;
+    }
+    sellTxId = valData.txId;
+    if (Number.isFinite(Number(valData.gain))) {
+      gain = Math.max(1, Math.floor(Number(valData.gain)));
+    }
+  } catch (err) {
+    console.error("[economy validate-sell-resource]", err);
+    toast(t("msg.error"), "bad");
+    return false;
+  }
+
+  const ok = await commit({
+    [savePath(S.uid, `inv/${itemId}`)]: increment(-qty),
+    [savePath(S.uid, "wallet/pp")]: increment(gain)
+  });
+  if (ok) {
+    const confirmPayload = JSON.stringify({
+      uid: S.uid,
+      name: S.profile?.username || "Jogador",
+      txId: sellTxId
+    });
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch("/api/economy/confirm-sell-crops", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: confirmPayload
+        });
+        if (res.ok) break;
+      } catch (_) {}
+    }
+    toast(t("msg.soldCrops", { n: qty, crop: itemName(itemId), gain }), "good");
   }
   return ok;
 }

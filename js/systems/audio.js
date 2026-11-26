@@ -234,3 +234,16 @@ export function playDungeonVictory() {
     tone(f, f, 0.22, { type: i % 2 ? "sine" : "triangle", gain: 0.14, delay: i * 0.065 });
   });
 }
+
+/** Crisp wooden chop sound when cutting trees in the Forest. */
+export function playAxeHit() {
+  tone(260, 115, 0.075, { type: "triangle", gain: 0.16, delay: 0 });
+  tone(520, 290, 0.045, { type: "square", gain: 0.06, delay: 0.01 });
+}
+
+/** Creak + heavy timber thud + leafy rustle when a tree falls in the Forest. */
+export function playTreeFall() {
+  tone(340, 170, 0.14, { type: "sawtooth", gain: 0.09, delay: 0 });
+  tone(120, 48, 0.22, { type: "triangle", gain: 0.18, delay: 0.11 });
+  tone(90, 42, 0.18, { type: "sine", gain: 0.12, delay: 0.14 });
+}

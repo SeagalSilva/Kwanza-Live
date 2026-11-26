@@ -10,6 +10,22 @@ export const mapSize = { w: MAP_W, h: MAP_H };
 export const PUBLIC_FARM = { x0: 12, y0: 12, w: 7, h: 6 };
 export const SPAWN = { x: 24, y: 22.5 };
 
+export const getForestExit = () => ({
+  tx0: mapSize.w - 2,
+  tx1: mapSize.w - 1,
+  ty0: 20,
+  ty1: 21,
+  portalX: mapSize.w - 1.15,
+  portalY: 21.0,
+  returnX: mapSize.w - 2.75,
+  returnY: 21.0
+});
+
+export const isForestExitTile = (tx, ty) => {
+  const ex = getForestExit();
+  return tx >= ex.tx0 && tx <= ex.tx1 && ty >= ex.ty0 && ty <= ex.ty1;
+};
+
 export const AD_SIGNS = [
   { id: "sign_center", x: 25, y: 19, labelKey: "ad.signCenter" },
   { id: "sign_west",   x: 11, y: 19, labelKey: "ad.signWest" },
@@ -140,12 +156,16 @@ function rebuildGrid() {
   // Roadside billboard signs stay clear of trees
   for (const s of AD_SIGNS) reserve(s.x, s.y, 1, 1, 0);
 
-  // Border forest + scattered trees
+  // Border forest + scattered trees (preserve eastern road exit to the Forest)
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const border = x < 2 || y < 2 || x >= W - 2 || y >= H - 2;
     if (border) GRID[y][x] = T.TREE;
     else if (GRID[y][x] === T.GRASS && !reserved[y][x] && hash2(x, y) < 0.05) GRID[y][x] = T.TREE;
   }
+
+  // Eastern road gateway to the Forest (y = 20..21, x = W-2..W-1)
+  fill(W - 2, 20, 2, 2, T.PATH);
+  reserve(W - 2, 19, 2, 4, 0);
 }
 
 export function applyMapConfig(mapConfig = null, customLands = []) {

@@ -7,6 +7,7 @@ import { me, resetMe, updateMe } from "./world/player.js";
 import { input, initInput, setInputActive } from "./world/input.js";
 import { computeFocus, focusLabel, perform, handleTap, tickPending, handleLeaveDungeon } from "./world/interactions.js";
 import { updateDungeon } from "./world/dungeonRoom.js";
+import { tickForestAutoExit, stopForestSync } from "./world/forestRoom.js";
 import { mapSize } from "./world/map.js";
 import { isMapEditMode, getDragState, startDrag, moveDrag, endDrag, exitMapEditMode } from "./world/editor.js";
 import { startPresence, stopPresence, publishPosition, isFresh } from "./systems/presence.js";
@@ -77,6 +78,7 @@ export function stopGame() {
   setInputActive(false);
   exitMapEditMode();
   stopCasinoSync();
+  stopForestSync();
   releaseSlotMachine();
   stopGameAdSign();
   S.room = "world";
@@ -95,7 +97,10 @@ function loop(ts) {
   updateMe(dt, input);
   tickPending();
   if (S.room === "dungeon") updateDungeon(dt, me, handleLeaveDungeon);
-  else if (S.room === "world") syncGameAdSignProximity(me);
+  else if (S.room === "forest") tickForestAutoExit(me);
+  else if (S.room === "world") {
+    syncGameAdSignProximity(me);
+  }
 
   focus = computeFocus();
   setInteractLabel(focusLabel(focus));

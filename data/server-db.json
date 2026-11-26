@@ -3,8 +3,8 @@
   "nextMsgId": 2,
   "workstationUsers": {
     "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1": {
-      "cycleId": 997606,
-      "depositedPP": 0,
+      "cycleId": 997608,
+      "depositedPP": 77,
       "readyToClaimBronze": 0,
       "history": [],
       "pendingTx": {},
@@ -25,16 +25,17 @@
         }
       ],
       "name": "SeagalSilva",
-      "firstDepositedAt": 0,
+      "firstDepositedAt": 1795695643289,
       "claimedShiftCycles": {},
       "pendingShiftClaims": {},
       "claimedDailyDates": {
         "2026-11-23": 1795682091256
       },
-      "pendingDailyClaims": {}
+      "pendingDailyClaims": {},
+      "updatedAt": 1795695643289
     },
     "test_u1": {
-      "cycleId": 997606,
+      "cycleId": 997608,
       "depositedPP": 0,
       "readyToClaimBronze": 1,
       "history": [
@@ -70,7 +71,7 @@
       "pendingShiftClaims": {}
     },
     "test_u2": {
-      "cycleId": 997606,
+      "cycleId": 997608,
       "depositedPP": 0,
       "readyToClaimBronze": 2,
       "history": [
@@ -290,31 +291,31 @@
       "sell": 4
     },
     "beans": {
-      "packPrice": 2,
+      "packPrice": 3,
       "packSize": 5,
       "yield": 2,
       "sell": 7
     },
     "peanut": {
-      "packPrice": 3,
+      "packPrice": 9,
       "packSize": 5,
       "yield": 3,
       "sell": 6
     },
     "cassava": {
-      "packPrice": 4,
+      "packPrice": 27,
       "packSize": 5,
       "yield": 3,
       "sell": 12
     },
     "banana": {
-      "packPrice": 5,
+      "packPrice": 70,
       "packSize": 5,
       "yield": 4,
       "sell": 15
     },
     "pineapple": {
-      "packPrice": 6,
+      "packPrice": 160,
       "packSize": 5,
       "yield": 4,
       "sell": 28
@@ -376,9 +377,12 @@
           },
           "CNp6ZR4tjnaoTz8lSr93YQ89Jsj1": {
             "name": "SeagalSilva",
-            "points": 303,
+            "points": 325,
+            "earnedPoints": 325,
+            "unspentEarnedPoints": 248,
+            "depositedPoints": 77,
             "firstEarnedAt": 1795689486135,
-            "updatedAt": 1795691782820
+            "updatedAt": 1795695700211
           }
         }
       }
@@ -499,12 +503,12 @@
       "rock_1": {
         "id": "rock_1",
         "tier": "uncommon",
-        "hp": 2,
-        "maxHp": 2,
+        "hp": 1,
+        "maxHp": 1,
         "x": 15,
         "y": 10,
         "respawnAt": 0,
-        "spawnedAt": 1795691810634
+        "spawnedAt": 1795695872192
       },
       "rock_2": {
         "id": "rock_2",
@@ -583,13 +587,13 @@
       },
       "rock_10": {
         "id": "rock_10",
-        "tier": "common",
+        "tier": "uncommon",
         "hp": 2,
         "maxHp": 2,
         "x": 15,
         "y": 9,
         "respawnAt": 0,
-        "spawnedAt": 1795691812957
+        "spawnedAt": 1795695872192
       },
       "rock_11": {
         "id": "rock_11",
@@ -629,6 +633,170 @@
         "x": 3,
         "y": 5,
         "respawnAt": 0
+      }
+    }
+  },
+  "forest": {
+    "trees": {
+      "tree_1": {
+        "id": "tree_1",
+        "tier": "pine",
+        "hp": 3,
+        "maxHp": 3,
+        "x": 6,
+        "y": 4,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_2": {
+        "id": "tree_2",
+        "tier": "pine",
+        "hp": 2,
+        "maxHp": 2,
+        "x": 17,
+        "y": 3,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_3": {
+        "id": "tree_3",
+        "tier": "elder",
+        "hp": 4,
+        "maxHp": 4,
+        "x": 9,
+        "y": 3,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_4": {
+        "id": "tree_4",
+        "tier": "pine",
+        "hp": 2,
+        "maxHp": 2,
+        "x": 19,
+        "y": 4,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_5": {
+        "id": "tree_5",
+        "tier": "oak",
+        "hp": 2,
+        "maxHp": 2,
+        "x": 17,
+        "y": 7,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_6": {
+        "id": "tree_6",
+        "tier": "oak",
+        "hp": 4,
+        "maxHp": 4,
+        "x": 22,
+        "y": 10,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_7": {
+        "id": "tree_7",
+        "tier": "mahogany",
+        "hp": 5,
+        "maxHp": 5,
+        "x": 18,
+        "y": 6,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_8": {
+        "id": "tree_8",
+        "tier": "oak",
+        "hp": 3,
+        "maxHp": 3,
+        "x": 13,
+        "y": 5,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_9": {
+        "id": "tree_9",
+        "tier": "pine",
+        "hp": 3,
+        "maxHp": 3,
+        "x": 9,
+        "y": 5,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_10": {
+        "id": "tree_10",
+        "tier": "oak",
+        "hp": 3,
+        "maxHp": 3,
+        "x": 16,
+        "y": 8,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_11": {
+        "id": "tree_11",
+        "tier": "pine",
+        "hp": 2,
+        "maxHp": 2,
+        "x": 14,
+        "y": 9,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_12": {
+        "id": "tree_12",
+        "tier": "mahogany",
+        "hp": 5,
+        "maxHp": 5,
+        "x": 18,
+        "y": 13,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_13": {
+        "id": "tree_13",
+        "tier": "oak",
+        "hp": 4,
+        "maxHp": 4,
+        "x": 5,
+        "y": 11,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_14": {
+        "id": "tree_14",
+        "tier": "mahogany",
+        "hp": 3,
+        "maxHp": 3,
+        "x": 16,
+        "y": 10,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_15": {
+        "id": "tree_15",
+        "tier": "pine",
+        "hp": 3,
+        "maxHp": 3,
+        "x": 8,
+        "y": 5,
+        "respawnAt": 0,
+        "spawnedAt": 0
+      },
+      "tree_16": {
+        "id": "tree_16",
+        "tier": "pine",
+        "hp": 2,
+        "maxHp": 2,
+        "x": 18,
+        "y": 7,
+        "respawnAt": 0,
+        "spawnedAt": 0
       }
     }
   },

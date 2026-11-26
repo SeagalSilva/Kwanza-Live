@@ -112,6 +112,9 @@ function createDefaultData() {
     mines: {
       rocks: {}
     },
+    forest: {
+      trees: {}
+    },
     adExemptions: {},
     userMail: {},
     dungeonUsers: {},
@@ -193,6 +196,7 @@ function mergeDefaults(loaded) {
       recentWins: Array.isArray(cas.recentWins) ? cas.recentWins : []
     },
     mines: loaded.mines && typeof loaded.mines === "object" ? loaded.mines : { rocks: {} },
+    forest: loaded.forest && typeof loaded.forest === "object" ? loaded.forest : { trees: {} },
     adExemptions: loaded.adExemptions && typeof loaded.adExemptions === "object" ? loaded.adExemptions : {},
     userMail: loaded.userMail && typeof loaded.userMail === "object" ? loaded.userMail : {},
     dungeonUsers: loaded.dungeonUsers && typeof loaded.dungeonUsers === "object" ? loaded.dungeonUsers : {},

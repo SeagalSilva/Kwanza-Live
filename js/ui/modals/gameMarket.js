@@ -4,11 +4,13 @@ import { t, fmtNum } from "../../i18n.js";
 import { esc } from "../../utils.js";
 import { FREE_SEED_LINK } from "../../config.js";
 import { CROPS, CROP_IDS, MIN_SEED_PACK } from "../../data/crops.js";
-import { cropItemId } from "../../data/items.js";
+import { RESOURCES, RESOURCE_IDS } from "../../data/resources.js";
+import { cropItemId, itemIcon, itemName } from "../../data/items.js";
 import { money } from "../../data/currencies.js";
 import {
   buySeeds,
   sellCrops,
+  sellResource,
   startFreeSeedVisit,
   getFreeSeedStatus,
   syncMarketConfigFromServer,
@@ -83,7 +85,8 @@ export function openGameMarket() {
       }).join("");
 
       const owned = CROP_IDS.filter((id) => inv(cropItemId(id)) > 0);
-      const sell = owned.map((id) => {
+      const ownedRes = RESOURCE_IDS.filter((id) => inv(id) > 0);
+      const sellCropsHtml = owned.map((id) => {
         const c = CROPS[id], n = inv(cropItemId(id));
         return `<div class="row">
           <span class="ico-lg">${c.emoji}</span>
@@ -94,6 +97,18 @@ export function openGameMarket() {
             <button class="btn small gold" data-sell="${id}" data-n="all" type="button">${esc(t("act.sellAll"))}</button>
           </div></div>`;
       }).join("");
+      const sellResHtml = ownedRes.map((id) => {
+        const r = RESOURCES[id], n = inv(id);
+        return `<div class="row">
+          <span class="ico-lg">${itemIcon(id)}</span>
+          <div class="grow"><b>${esc(itemName(id))}</b> <span class="qty">×${fmtNum(n)}</span>
+            <small>${esc(t("gm.each"))} ${money(r.sellPp, "pp")}</small></div>
+          <div class="btns">
+            <button class="btn small" data-sell-res="${id}" data-n="1" type="button">${esc(t("act.sell"))}</button>
+            <button class="btn small gold" data-sell-res="${id}" data-n="all" type="button">${esc(t("act.sellAll"))}</button>
+          </div></div>`;
+      }).join("");
+      const sell = `${sellCropsHtml}${sellResHtml}`;
 
       const adminHtml = admin ? `
         <p class="muted" style="padding: 4px 2px 10px; font-size: 12.5px; line-height: 1.45;">
@@ -231,6 +246,12 @@ export function openGameMarket() {
         if (s && !s.disabled) {
           s.disabled = true;
           try { await sellCrops(s.dataset.sell, s.dataset.n === "all" ? Infinity : +s.dataset.n); } finally { s.disabled = false; }
+          return;
+        }
+        const sr = e.target.closest("[data-sell-res]");
+        if (sr && !sr.disabled) {
+          sr.disabled = true;
+          try { await sellResource(sr.dataset.sellRes, sr.dataset.n === "all" ? Infinity : +sr.dataset.n); } finally { sr.disabled = false; }
         }
       };
     }
