@@ -277,6 +277,15 @@ export default {
   "ws.dailyLeaderboard": "Classificação de Hoje (UTC)",
   "ws.dailyEmpty": "Ainda ninguém acumulou pontos hoje. Vende colheitas no Mercado ou minera nas Minas para participar!",
   "ws.dailyCutoffLabel": "Abaixo do Top {top} — recebe 1% do total diário",
+  "ws.welcomeRoom": "Entraste no Posto de Trabalho! Fala com o Sr. Mateus (Pool PP) ou com a Dona Clara (Tarefas PTC).",
+  "ws.bannerPool": "RECEPTOR DA POOL",
+  "ws.bannerPtc": "MURO DE TAREFAS (PTC)",
+  "ws.talkPoolNpc": "Falar c/ Receptor da Pool",
+  "ws.talkPtcNpc": "Falar c/ Muro de Tarefas (PTC)",
+  "ws.npcPool1": "Bem-vindo! Entrega aqui os teus Pontos de Pool no turno de 30m ou vê a Pool Diária.",
+  "ws.npcPool2": "Os prémios não recolhidos também ficam guardados em segurança no Correio!",
+  "ws.npcPtc1": "Queres ganhar moedas de bronze extra? Tenho tarefas PTC do AdsLab prontas para ti!",
+  "ws.npcPtc2": "Abre o link da tarefa, aguarda os segundos pedidos e recebe bronze na hora!",
 
   // Casa de Apostas (Casino)
   "cas.welcomeRoom": "Entraste na Casa de Apostas! Conversa com a equipa, gira a Roleta ou ocupa uma Máquina de Slots.",
@@ -463,5 +472,28 @@ export default {
   "dun.npc1": "Bem-vindo à Fase 1: A entrada da Dungeon! São 10 andares no coração da floresta.",
   "dun.npc2": "Cuidado! Os monstros perseguem e matam. Se morreres, perdes tudo da mochila e outro jogador pode apanhar!",
   "dun.npc3": "Usa a Fonte brilhante à esquerda 1 vez por andar para recuperar +45 de Vida (❤️) e sai pela porta 🚪 para guardar o espólio.",
-  "dun.npc4": "No Andar 10 espera o Guardião Ancião da Floresta 👑 — derrota-o por prata e muito PP!"
+  "dun.npc4": "No Andar 10 espera o Guardião Ancião da Floresta 👑 — derrota-o por prata e muito PP!",
+
+  // Muro de Tarefas PTC (AdsLab)
+  "ptc.modalTitle": "Muro de Tarefas PTC (AdsLab)",
+  "ptc.intro": "Completa tarefas PTC abaixo visualizando a página durante os segundos indicados para ganhar moedas de bronze!",
+  "ptc.refresh": "Atualizar",
+  "ptc.statsCompleted": "Tarefas concluídas",
+  "ptc.statsEarned": "Bronze ganho em PTC",
+  "ptc.activeTask": "Tarefa em curso",
+  "ptc.readyLabel": "Concluída! Pronta para recolher",
+  "ptc.claimBtn": "Receber +{n} 🥉",
+  "ptc.startBtn": "Abrir Tarefa",
+  "ptc.inProgress": "⏳ A contar tempo acima...",
+  "ptc.visitsLabel": "Hoje",
+  "ptc.limitReached": "Limite diário atingido",
+  "ptc.cooldownWait": "Espera {time}",
+  "ptc.noTasks": "Sem tarefas PTC disponíveis para a tua região neste momento. Tenta atualizar mais tarde.",
+  "ptc.fetchError": "Não foi possível carregar as tarefas PTC agora. Tenta novamente em instantes.",
+  "ptc.notConfigured": "A chave da API AdsLab PTC (ADSLAB_TASKS_API_KEY) ainda não está configurada nas variáveis do servidor.",
+  "ptc.dailyLimitReached": "Já atingiste o limite diário desta tarefa.",
+  "ptc.cooldownActive": "Esta tarefa ainda está em espera. Aguarda o cooldown.",
+  "ptc.taskExpired": "Lista expirada. A atualizar tarefas...",
+  "ptc.tooEarly": "Ainda faltam {s}s para completar o tempo mínimo da tarefa!",
+  "ptc.rewardSuccess": "🪙 Tarefa PTC concluída! Recebeste +{n} moedas de bronze!"
 };

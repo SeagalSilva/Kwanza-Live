@@ -30,13 +30,21 @@ import {
   handleDungeonTap,
   tickDungeonPending
 } from "./dungeonRoom.js";
+import {
+  enterWorkstationRoom,
+  exitWorkstationRoom,
+  computeWorkstationFocus,
+  focusLabelWorkstation,
+  performWorkstationAction,
+  handleWorkstationTap,
+  tickWorkstationPending
+} from "./workstationRoom.js";
 import { interactTile, tileData, cropState, canUseScope, landModeOf } from "../systems/farming.js";
 import { CROPS } from "../data/crops.js";
 import { releaseSlotMachine, forfeitRouletteFreeSpins } from "../systems/casino.js";
 import { openGameMarket } from "../ui/modals/gameMarket.js";
 import { openPlayerMarket } from "../ui/modals/playerMarket.js";
 import { openLand } from "../ui/modals/land.js";
-import { openWorkstation } from "../ui/modals/workstation.js";
 import { openGovernment } from "../ui/modals/government.js";
 import { openPostOffice } from "../ui/modals/postOffice.js";
 import { openDungeonModal } from "../ui/modals/dungeon.js";
@@ -61,11 +69,17 @@ export function handleLeaveDungeon() {
   exitDungeonRoom(me, b);
 }
 
+function handleLeaveWorkstation() {
+  const b = BUILDINGS.find((x) => x.id === "workstation");
+  exitWorkstationRoom(me, b);
+}
+
 /** Best thing to interact with right now (or null). */
 export function computeFocus() {
   if (S.room === "casino") return computeCasinoFocus(me);
   if (S.room === "mines") return computeMinesFocus(me);
   if (S.room === "dungeon") return computeDungeonFocus(me);
+  if (S.room === "workstation") return computeWorkstationFocus(me);
 
   const v = DIRV[me.dir];
   const probes = [[me.x + v[0] * 0.8, me.y + v[1] * 0.8], [me.x, me.y]];
@@ -93,6 +107,7 @@ export function focusLabel(f) {
   if (S.room === "casino") return focusLabelCasino(f);
   if (S.room === "mines") return focusLabelMines(f);
   if (S.room === "dungeon") return focusLabelDungeon(f);
+  if (S.room === "workstation") return focusLabelWorkstation(f);
   if (f.kind === "building") return t("act.open", { place: t(`place.${f.id}`) });
   if (f.kind === "land") return t("act.viewLand", { id: f.id });
   const tile = tileData(f.scope, f.key);
@@ -117,11 +132,14 @@ export function perform(f) {
   if (S.room === "dungeon") {
     return performDungeonAction(f, handleLeaveDungeon, me);
   }
+  if (S.room === "workstation") {
+    return performWorkstationAction(f, handleLeaveWorkstation);
+  }
   if (f.kind === "building") {
     playEnterBuilding();
     if (f.id === "gameMarket") return openGameMarket();
     if (f.id === "bazaar") return openPlayerMarket();
-    if (f.id === "workstation") return openWorkstation();
+    if (f.id === "workstation") return enterWorkstationRoom(me, exitMapEditMode);
     if (f.id === "government") return openGovernment();
     if (f.id === "casino") return enterCasinoRoom(me, exitMapEditMode);
     if (f.id === "mines") return enterMinesRoom(me, exitMapEditMode);
@@ -144,6 +162,7 @@ export function handleTap(wx, wy) {
   if (S.room === "casino") return handleCasinoTap(wx, wy, me);
   if (S.room === "mines") return handleMinesTap(wx, wy, me);
   if (S.room === "dungeon") return handleDungeonTap(wx, wy, me);
+  if (S.room === "workstation") return handleWorkstationTap(wx, wy, me);
 
   const tx = Math.floor(wx), ty = Math.floor(wy), key = `${tx}_${ty}`;
 
@@ -170,6 +189,7 @@ export function tickPending() {
   if (S.room === "casino") return tickCasinoPending(me, handleLeaveCasino);
   if (S.room === "mines") return tickMinesPending(me, handleLeaveMines);
   if (S.room === "dungeon") return tickDungeonPending(me, handleLeaveDungeon);
+  if (S.room === "workstation") return tickWorkstationPending(me, handleLeaveWorkstation);
 
   const p = me.pending;
   if (!p) return;

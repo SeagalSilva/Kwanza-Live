@@ -277,6 +277,15 @@ export default {
   "ws.dailyLeaderboard": "Today's Leaderboard (UTC)",
   "ws.dailyEmpty": "No one has earned points today yet. Sell crops at the Market or mine in the Mines to join!",
   "ws.dailyCutoffLabel": "Below Top {top} — receives 1% of daily points",
+  "ws.welcomeRoom": "Welcome to the Job Center! Talk to Mr. Mateus (Pool PP) or Mrs. Clara (PTC Tasks).",
+  "ws.bannerPool": "POOL RECEIVER",
+  "ws.bannerPtc": "PTC TASK WALL",
+  "ws.talkPoolNpc": "Talk to Pool Receiver",
+  "ws.talkPtcNpc": "Talk to PTC Task Wall",
+  "ws.npcPool1": "Welcome! Deposit your Pool Points for the 30m shift or inspect today's Daily Pool.",
+  "ws.npcPool2": "Any unclaimed shift or daily rewards are also safely delivered to the Post Office!",
+  "ws.npcPtc1": "Want extra bronze coins? I have AdsLab PTC tasks ready for you!",
+  "ws.npcPtc2": "Open a task link, wait the required seconds, and claim bronze coins right away!",
 
   // Betting House (Casino)
   "cas.welcomeRoom": "Welcome to the Betting House! Chat with staff, play Roulette, or claim a Slot Machine.",
@@ -463,5 +472,28 @@ export default {
   "dun.npc1": "Welcome to Phase 1: The Dungeon Entrance! Conquer 10 woodland floors.",
   "dun.npc2": "Watch out! Monsters chase and kill. If you die, everything in your bag drops for another player to grab!",
   "dun.npc3": "Use the glowing Forest Spring on the left once per floor to heal +45 HP, and exit via 🚪 to safely bank your loot.",
-  "dun.npc4": "Floor 10 holds the Elder Forest Guardian 👑 — defeat it for silver and huge PP!"
+  "dun.npc4": "Floor 10 holds the Elder Forest Guardian 👑 — defeat it for silver and huge PP!",
+
+  // PTC Task Wall (AdsLab)
+  "ptc.modalTitle": "PTC Task Wall (AdsLab)",
+  "ptc.intro": "Complete PTC tasks below by viewing each site for the required seconds to earn bronze coins!",
+  "ptc.refresh": "Refresh",
+  "ptc.statsCompleted": "Completed tasks",
+  "ptc.statsEarned": "PTC bronze earned",
+  "ptc.activeTask": "Active task",
+  "ptc.readyLabel": "Completed! Ready to claim",
+  "ptc.claimBtn": "Claim +{n} 🥉",
+  "ptc.startBtn": "Open Task",
+  "ptc.inProgress": "⏳ Timer running above...",
+  "ptc.visitsLabel": "Today",
+  "ptc.limitReached": "Daily limit reached",
+  "ptc.cooldownWait": "Wait {time}",
+  "ptc.noTasks": "No PTC tasks available for your region right now. Try refreshing later.",
+  "ptc.fetchError": "Could not load PTC tasks right now. Please try again shortly.",
+  "ptc.notConfigured": "The AdsLab PTC API key (ADSLAB_TASKS_API_KEY) is not configured in server environment variables yet.",
+  "ptc.dailyLimitReached": "You have already reached the daily limit for this task.",
+  "ptc.cooldownActive": "This task is still on cooldown. Please wait.",
+  "ptc.taskExpired": "Task list expired. Refreshing tasks...",
+  "ptc.tooEarly": "{s}s remaining before you can claim this task!",
+  "ptc.rewardSuccess": "🪙 PTC task complete! Earned +{n} bronze coins!"
 };

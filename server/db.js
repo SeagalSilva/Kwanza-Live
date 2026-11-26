@@ -86,7 +86,13 @@ function createDefaultData() {
     adExemptions: {},
     userMail: {},
     dungeonUsers: {},
-    dungeonDrops: []
+    dungeonDrops: [],
+    ptcState: {
+      users: {},
+      sessions: {},
+      pendingClaims: {},
+      taskCache: {}
+    }
   };
 }
 
@@ -160,7 +166,13 @@ function mergeDefaults(loaded) {
     adExemptions: loaded.adExemptions && typeof loaded.adExemptions === "object" ? loaded.adExemptions : {},
     userMail: loaded.userMail && typeof loaded.userMail === "object" ? loaded.userMail : {},
     dungeonUsers: loaded.dungeonUsers && typeof loaded.dungeonUsers === "object" ? loaded.dungeonUsers : {},
-    dungeonDrops: Array.isArray(loaded.dungeonDrops) ? loaded.dungeonDrops : []
+    dungeonDrops: Array.isArray(loaded.dungeonDrops) ? loaded.dungeonDrops : [],
+    ptcState: {
+      users: loaded.ptcState?.users && typeof loaded.ptcState.users === "object" ? loaded.ptcState.users : {},
+      sessions: loaded.ptcState?.sessions && typeof loaded.ptcState.sessions === "object" ? loaded.ptcState.sessions : {},
+      pendingClaims: loaded.ptcState?.pendingClaims && typeof loaded.ptcState.pendingClaims === "object" ? loaded.ptcState.pendingClaims : {},
+      taskCache: loaded.ptcState?.taskCache && typeof loaded.ptcState.taskCache === "object" ? loaded.ptcState.taskCache : {}
+    }
   };
 }
 

@@ -11,6 +11,7 @@ import { drawCharacter } from "./character.js";
 import { renderCasinoRoom } from "./casinoRoom.js";
 import { renderMinesRoom } from "./minesRoom.js";
 import { renderDungeonRoom } from "./dungeonRoom.js";
+import { renderWorkstationRoom } from "./workstationRoom.js";
 import { drawLandFloor, drawLandFenceDecor, pushLandEntities } from "./landVisuals.js";
 import { hash2, colorFromString } from "../utils.js";
 
@@ -412,6 +413,12 @@ export function render(ctx, g) {
   }
   if (S.room === "dungeon") {
     return renderDungeonRoom(ctx, view, g, {
+      sanitizeLook,
+      myLook: sanitizeLook(S.profile?.look)
+    });
+  }
+  if (S.room === "workstation") {
+    return renderWorkstationRoom(ctx, view, g, {
       sanitizeLook,
       myLook: sanitizeLook(S.profile?.look)
     });
